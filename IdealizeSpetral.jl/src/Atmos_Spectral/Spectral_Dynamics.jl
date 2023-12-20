@@ -304,17 +304,7 @@ function Spectral_Dynamics!(mesh::Spectral_Spherical_Mesh,  vert_coord::Vert_Coo
     integrator          = semi_implicit.integrator
     Δt                  = Get_Δt(integrator)
 
-    # Calculate latent heat and modify qv_current
-    # HS_forcing_water_vapor!(grid_tracers_c,  grid_δtracers, grid_t, grid_δt, grid_p_full)
 
-    mean_ps_p, mean_energy_p, mean_moisture_p = Compute_Corrections_Init(vert_coord, mesh, atmo_data,
-    grid_u_p, grid_v_p, grid_ps_p, grid_t_p, 
-    grid_δu, grid_δv, grid_δt,  
-    Δt, grid_energy_full, grid_tracers_p, grid_tracers_c, grid_δtracers, grid_tracers_full)
-    
-    # compute pressure based on grid_ps -> grid_p_half, grid_lnp_half, grid_p_full, grid_lnp_full 
-    Pressure_Variables!(vert_coord, grid_ps, grid_p_half, grid_Δp, grid_lnp_half, grid_p_full, grid_lnp_full)
-    ###
     ###
 
     ##
@@ -386,45 +376,9 @@ function Spectral_Dynamics!(mesh::Spectral_Spherical_Mesh,  vert_coord::Vert_Coo
     
     factor1[:,:,20]             = surface_evaporation[:,:,20] ./(2. .* Δt)
     grid_δtracers[:,:,20]     .+= surface_evaporation[:,:,20] ./(2. .* Δt)
-    grid_tracers_c[:,:,20]    .= ((grid_tracers_c[:,:,20] .+ C_E .* V_c[:,:,20] .* grid_tracers_c_max[:,:,20] .* Δt ./ za[:,:,1]) 
+    grid_tracers_n[:,:,20]    .= ((grid_tracers_c[:,:,20] .+ C_E .* V_c[:,:,20] .* grid_tracers_c_max[:,:,20] .* Δt ./ za[:,:,1]) 
                                    ./ (1. .+ C_E .* V_c[:,:,20]  .* Δt ./ za[:,:,1]))
     
-    ###
-    # compute ∇ps = ∇lnps * ps
-    Compute_Gradients!(mesh, spe_lnps_c,  grid_dλ_ps, grid_dθ_ps)
-    grid_dλ_ps .*= grid_ps
-    grid_dθ_ps .*= grid_ps
-
-
-    
-    # compute grid_M_half, grid_w_full, grid_δu, grid_δv, grid_δps, grid_δt, 
-    # except the contributions from geopotential or vertical advection
-    Four_In_One!(vert_coord, atmo_data, grid_div, grid_u, grid_v, grid_ps, 
-    grid_Δp, grid_lnp_half, grid_lnp_full, grid_p_full,
-    grid_dλ_ps, grid_dθ_ps, 
-    grid_t, 
-    grid_M_half, grid_w_full, grid_δu, grid_δv, grid_δps, grid_δt, grid_δtracers)
-
-    Compute_Geopotential!(vert_coord, atmo_data, 
-    grid_lnp_half, grid_lnp_full,  
-    grid_t, 
-    grid_geopots, grid_geopot_full, grid_geopot_half, grid_tracers_c)
-
-    grid_δlnps .= grid_δps ./ grid_ps
-    Trans_Grid_To_Spherical!(mesh, grid_δlnps, spe_δlnps)
-
-    # compute vertical advection, todo  finite volume method 
-    Vert_Advection!(vert_coord, grid_u, grid_Δp, grid_M_half, Δt, vert_coord.vert_advect_scheme, grid_δQ)
-    grid_δu  .+= grid_δQ
-    Vert_Advection!(vert_coord, grid_v, grid_Δp, grid_M_half, Δt, vert_coord.vert_advect_scheme, grid_δQ)
-    grid_δv  .+= grid_δQ
-    Vert_Advection!(vert_coord, grid_t, grid_Δp, grid_M_half, Δt, vert_coord.vert_advect_scheme, grid_δQ)
-    grid_δt  .+= grid_δQ
-    ### By CJY2
-    Vert_Advection!(vert_coord, grid_tracers_c, grid_Δp, grid_M_half, Δt, vert_coord.vert_advect_scheme,  grid_δQ)
-    grid_δtracers .+= grid_δQ 
-
-
     """
     # compute moisture flux 
     """
@@ -485,6 +439,58 @@ function Spectral_Dynamics!(mesh::Spectral_Spherical_Mesh,  vert_coord::Vert_Coo
     end
     # @info maximum(CE), minimum(CE)
     # @info maximum(CF), minimum(CF)
+
+
+
+    # Calculate latent heat and modify qv_current
+    # HS_forcing_water_vapor!(grid_tracers_c,  grid_δtracers, grid_t, grid_δt, grid_p_full)
+
+    mean_ps_p, mean_energy_p, mean_moisture_p = Compute_Corrections_Init(vert_coord, mesh, atmo_data,
+    grid_u_p, grid_v_p, grid_ps_p, grid_t_p, 
+    grid_δu, grid_δv, grid_δt,  
+    Δt, grid_energy_full, grid_tracers_p, grid_tracers_c, grid_δtracers, grid_tracers_full)
+    
+    # compute pressure based on grid_ps -> grid_p_half, grid_lnp_half, grid_p_full, grid_lnp_full 
+    Pressure_Variables!(vert_coord, grid_ps, grid_p_half, grid_Δp, grid_lnp_half, grid_p_full, grid_lnp_full)
+    ###
+
+    ###
+    # compute ∇ps = ∇lnps * ps
+    Compute_Gradients!(mesh, spe_lnps_c,  grid_dλ_ps, grid_dθ_ps)
+    grid_dλ_ps .*= grid_ps
+    grid_dθ_ps .*= grid_ps
+
+
+    
+    # compute grid_M_half, grid_w_full, grid_δu, grid_δv, grid_δps, grid_δt, 
+    # except the contributions from geopotential or vertical advection
+    Four_In_One!(vert_coord, atmo_data, grid_div, grid_u, grid_v, grid_ps, 
+    grid_Δp, grid_lnp_half, grid_lnp_full, grid_p_full,
+    grid_dλ_ps, grid_dθ_ps, 
+    grid_t, 
+    grid_M_half, grid_w_full, grid_δu, grid_δv, grid_δps, grid_δt, grid_δtracers)
+
+    Compute_Geopotential!(vert_coord, atmo_data, 
+    grid_lnp_half, grid_lnp_full,  
+    grid_t, 
+    grid_geopots, grid_geopot_full, grid_geopot_half, grid_tracers_c)
+
+    grid_δlnps .= grid_δps ./ grid_ps
+    Trans_Grid_To_Spherical!(mesh, grid_δlnps, spe_δlnps)
+
+    # compute vertical advection, todo  finite volume method 
+    Vert_Advection!(vert_coord, grid_u, grid_Δp, grid_M_half, Δt, vert_coord.vert_advect_scheme, grid_δQ)
+    grid_δu  .+= grid_δQ
+    Vert_Advection!(vert_coord, grid_v, grid_Δp, grid_M_half, Δt, vert_coord.vert_advect_scheme, grid_δQ)
+    grid_δv  .+= grid_δQ
+    Vert_Advection!(vert_coord, grid_t, grid_Δp, grid_M_half, Δt, vert_coord.vert_advect_scheme, grid_δQ)
+    grid_δt  .+= grid_δQ
+    ### By CJY2
+    Vert_Advection!(vert_coord, grid_tracers_c, grid_Δp, grid_M_half, Δt, vert_coord.vert_advect_scheme,  grid_δQ)
+    grid_δtracers .+= grid_δQ 
+
+
+
     
     
     ### spectral tracers need to be done first 
