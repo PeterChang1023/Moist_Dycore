@@ -360,16 +360,6 @@ function Spectral_Dynamics!(mesh::Spectral_Spherical_Mesh,  vert_coord::Vert_Coo
     grid_tracers_c_max .= (0.622 .* (611.12 .* exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ grid_t)) )) ./ (grid_p_full .- 0.378 .* (611.12 .* exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ grid_t)) )) 
     
     surface_evaporation         = deepcopy(grid_δtracers).*0
-    """
-    surface_evaporation[:,:,20] = C_E .* V_c[:,:,20] .* (grid_tracers_c_max[:,:,20] .- min.(grid_tracers_c[:,:,20], grid_tracers_c_max[:,:,20])) ./ za[:,:,1]
-    factor1[:,:,20]             = surface_evaporation[:,:,20] ./(2. .* Δt)
-    grid_δtracers[:,:,20]     .+= surface_evaporation[:,:,20] ./(2. .* Δt)
-    """
-    # V_p  = zeros(((128,64,20)))
-    # V_p .= (grid_u_p[:,:,:].^2 .+ grid_v_p[:,:,:].^2).^0.5
-    # grid_tracers_p_max  = deepcopy(grid_tracers_p)
-    # grid_tracers_p_max .= (0.622 .* (611.12 .* exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ grid_t_p)) )) ./ (grid_p_full .- 0.378 .* (611.12 .* exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ grid_t_p)) )) 
-
     surface_evaporation[:,:,20] .= ((C_E .* V_c[:,:,20] .* Δt ./ za[:,:,1] .*  (grid_tracers_c_max[:,:,20] .- min.(grid_tracers_c[:,:,20], grid_tracers_c_max[:,:,20]))) ./ (1. .+ C_E .* V_c[:,:,20] .* Δt ./ za[:,:,1])) 
     # surface_evaporation[:,:,20] .= ((grid_tracers_c[:,:,20] .+ C_E .* V_c[:,:,20] .* grid_tracers_c_max[:,:,20] .* 2. .*Δt ./ za[:,:,1]) 
                                    # ./ (1. .+ C_E .* V_c[:,:,20] .* 2. .*Δt ./ za[:,:,1]) .- grid_tracers_c[:,:,20]) 
@@ -379,6 +369,23 @@ function Spectral_Dynamics!(mesh::Spectral_Spherical_Mesh,  vert_coord::Vert_Coo
     grid_tracers_n[:,:,20]    .= ((grid_tracers_c[:,:,20] .+ C_E .* V_c[:,:,20] .* grid_tracers_c_max[:,:,20] .* Δt ./ za[:,:,1]) 
                                    ./ (1. .+ C_E .* V_c[:,:,20]  .* Δt ./ za[:,:,1]))
     
+   """
+   # Sensible heat fluxes
+   """
+   θc = mesh.θc
+   # Tsurf = zeros((128,64))
+   Tsurf = deepcopy(grid_t[:,:,20]) .*0
+   for i in 1:64
+     Tsurf[:,i] .= 29. .* exp.(-(θc[i] .^2. ./ (2 * (26. * pi / 180.)^2.))) .+ 271.
+   end
+
+   grid_δt[:,:,20] .+= (((grid_t[:,:,20] .+ C_E .* V_c[:,:,20] .* grid_t[:,:,20] .* Δt ./ za[:,:,1])
+                         ./ (1. .+ C_E .* V_c[:,:,20] .* Δt ./ za[:,:,1]) .- grid_t[:,:,20]) ./ Δt)
+   grid_t_n[:,:,20]  .= ((grid_t[:,:,20] .+ C_E .* V_c[:,:,20] .* grid_t[:,:,20] .* Δt ./ za[:,:,1]) 
+                         ./ (1. .+ C_E .* V_c[:,:,20] .* Δt ./ za[:,:,1]))
+
+
+
     """
     # compute moisture flux 
     """
