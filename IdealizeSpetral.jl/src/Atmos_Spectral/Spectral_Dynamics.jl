@@ -376,7 +376,7 @@ function Spectral_Dynamics!(mesh::Spectral_Spherical_Mesh,  vert_coord::Vert_Coo
     factor1[:,:,20]              = (((grid_tracers_c[:,:,20] .+ C_E .* V_c[:,:,20] .* max.(grid_tracers_c[:,:,20],grid_tracers_c_ps_max[:,:,1]) .* Δt ./ za[:,:,1]) ./ (1. .+ C_E .* V_c[:,:,20]  .* Δt ./ za[:,:,1])) .- grid_tracers_c[:,:,20]) ./(2. .* Δt)
 
     surface_evaporation[:,:,20] .= ((C_E .* V_c[:,:,20] .* Δt ./ za[:,:,1] .*  (grid_tracers_c_ps_max[:,:,1] .- min.(grid_tracers_c[:,:,20], grid_tracers_c_ps_max[:,:,1]))) ./ (1. .+ C_E .* V_c[:,:,20] .* Δt ./ za[:,:,1])) 
-    grid_δtracers[:,:,20]     .+= surface_evaporation[:,:,20] ./(2. .* Δt)
+    # grid_δtracers[:,:,20]     .+= surface_evaporation[:,:,20] ./(2. .* Δt)
     
     grid_tracers_c[:,:,20]      .= ((grid_tracers_c[:,:,20] .+ C_E .* V_c[:,:,20] .* max.(grid_tracers_c[:,:,20],grid_tracers_c_ps_max[:,:,1]) .* Δt ./ za[:,:,1]) ./ (1. .+ C_E .* V_c[:,:,20]  .* Δt ./ za[:,:,1]))
     ##########################
@@ -444,16 +444,16 @@ function Spectral_Dynamics!(mesh::Spectral_Spherical_Mesh,  vert_coord::Vert_Coo
     # @info maximum(CF)
 
     # first calculate the updates at the top model level
-    grid_δtracers[:,:,1] .+= (CF[:,:,1] .- grid_tracers_c[:,:,1]) ./ (2. .* Δt)
+    grid_δtracers[:,:,1] .+= (CF[:,:,1] .- grid_tracers_n[:,:,1]) ./ (2. .* Δt)
     ### WARNING factor1 just factor, so it did  ./ ./ (2. .* Δt). 
     ### So did factor2
-    factor2[:,:,1]        .= (CF[:,:,1] .- grid_tracers_c[:,:,1]) ./ (2. .* Δt)  # because CE at top = 0
-    grid_tracers_c[:,:,1] .= CF[:,:,1] 
+    factor2[:,:,1]        .= (CF[:,:,1] .- grid_tracers_n[:,:,1]) ./ (2. .* Δt)  # because CE at top = 0
+    grid_tracers_n[:,:,1] .= CF[:,:,1] 
     # Loop over the remaining level
     for k in 2:19
-        grid_δtracers[:,:,k]  .+= (CE[:,:,k] .* grid_tracers_c[:,:,k-1] .+ CF[:,:,k] .- grid_tracers_c[:,:,k]) ./ (2. .* Δt)
-        factor2[:,:,k]         .= (CE[:,:,k] .* grid_tracers_c[:,:,k-1] .+ CF[:,:,k] .- grid_tracers_c[:,:,k]) ./ (2. .* Δt)
-        grid_tracers_c[:,:,k]  .=  CE[:,:,k] .* grid_tracers_c[:,:,k-1] .+ CF[:,:,k]
+        grid_δtracers[:,:,k]  .+= (CE[:,:,k] .* grid_tracers_n[:,:,k-1] .+ CF[:,:,k] .- grid_tracers_n[:,:,k]) ./ (2. .* Δt)
+        factor2[:,:,k]         .= (CE[:,:,k] .* grid_tracers_n[:,:,k-1] .+ CF[:,:,k] .- grid_tracers_n[:,:,k]) ./ (2. .* Δt)
+        grid_tracers_n[:,:,k]  .=  CE[:,:,k] .* grid_tracers_n[:,:,k-1] .+ CF[:,:,k]
     end
     # @info maximum(CE), minimum(CE)
     # @info maximum(CF), minimum(CF)
