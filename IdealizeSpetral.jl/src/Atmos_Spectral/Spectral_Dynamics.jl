@@ -364,7 +364,7 @@ function Spectral_Dynamics!(mesh::Spectral_Spherical_Mesh,  vert_coord::Vert_Coo
     # surface_evaporation[:,:,20] .= ((grid_tracers_c[:,:,20] .+ C_E .* V_c[:,:,20] .* grid_tracers_c_max[:,:,20] .* 2. .*Δt ./ za[:,:,1]) 
                                    # ./ (1. .+ C_E .* V_c[:,:,20] .* 2. .*Δt ./ za[:,:,1]) .- grid_tracers_c[:,:,20]) 
     
-    factor1[:,:,20]             = surface_evaporation[:,:,20] ./(2. .* Δt)
+    factor1[:,:,20]            .= surface_evaporation[:,:,20] ./(2. .* Δt)
     grid_δtracers[:,:,20]     .+= surface_evaporation[:,:,20] ./(2. .* Δt)
     grid_tracers_n[:,:,20]    .= ((grid_tracers_c[:,:,20] .+ C_E .* V_c[:,:,20] .* grid_tracers_c_max[:,:,20] .* Δt ./ za[:,:,1]) 
                                    ./ (1. .+ C_E .* V_c[:,:,20]  .* Δt ./ za[:,:,1]))
