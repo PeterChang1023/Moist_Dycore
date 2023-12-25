@@ -823,12 +823,12 @@ function Spectral_Initialize_Fields!(mesh::Spectral_Spherical_Mesh, atmo_data::A
       
         θc              = mesh.θc # lat
         rdgas = atmo_data.rdgas
-        grid_t         .= 271. # init_t
-        for j in 1:64
-            grid_t[:,j,20] .= 29. .* exp(-(θc[j]^2 / (2. * (26. * pi / 180.)^2))) .+ 271.
-        end
+        grid_t         .=  init_t # 271.
+        # for j in 1:64
+        #     grid_t[:,j,20] .= 29. .* exp(-(θc[j]^2 / (2. * (26. * pi / 180.)^2))) .+ 271.
+        # end
         # dΦ/dlnp = -RT    Δp = -ΔΦ/RT
-        grid_lnps[:,:,1] .= log(sea_level_ps_ref) .- grid_geopots[:,:,1] ./ (rdgas * grid_t[:,:,20]) # init_t
+        grid_lnps[:,:,1] .= log(sea_level_ps_ref) .- grid_geopots[:,:,1] ./ (rdgas * init_t) # grid_t[:,:,20]
         grid_ps   .= exp.(grid_lnps)
         
         
