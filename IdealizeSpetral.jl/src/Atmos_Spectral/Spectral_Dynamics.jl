@@ -376,7 +376,7 @@ function Spectral_Dynamics!(mesh::Spectral_Spherical_Mesh,  vert_coord::Vert_Coo
     factor1[:,:,20]              = (((grid_tracers_c[:,:,20] .+ C_E .* V_c[:,:,20] .* max.(grid_tracers_c[:,:,20],grid_tracers_c_ps_max[:,:,1]) .* Δt ./ za[:,:,1]) ./ (1. .+ C_E .* V_c[:,:,20]  .* Δt ./ za[:,:,1])) .- grid_tracers_c[:,:,20]) ./(2. .* Δt)
 
     surface_evaporation[:,:,20] .= ((C_E .* V_c[:,:,20] .* Δt ./ za[:,:,1] .*  (grid_tracers_c_ps_max[:,:,1] .- min.(grid_tracers_c[:,:,20], grid_tracers_c_ps_max[:,:,1]))) ./ (1. .+ C_E .* V_c[:,:,20] .* Δt ./ za[:,:,1])) 
-    # grid_δtracers[:,:,20]     .+= surface_evaporation[:,:,20] ./(2. .* Δt)
+    grid_δtracers[:,:,20]     .+= surface_evaporation[:,:,20] ./(2. .* Δt)
     
     grid_tracers_c[:,:,20]      .= ((grid_tracers_c[:,:,20] .+ C_E .* V_c[:,:,20] .* max.(grid_tracers_c[:,:,20],grid_tracers_c_ps_max[:,:,1]) .* Δt ./ za[:,:,1]) ./ (1. .+ C_E .* V_c[:,:,20]  .* Δt ./ za[:,:,1]))
     ##########################
@@ -994,7 +994,7 @@ function HS_forcing_water_vapor!(semi_implicit::Semi_Implicit_Solver, grid_trace
     factor3          .= grid_tracers_diff
     diabatic_heating  = deepcopy(grid_tracers_diff)
     diabatic_heating .= (grid_tracers_diff .* Lv ./ cp) ./day_to_sec .* L 
-    @info "max: ", maximum(diabatic_heating)
+    # @info "max: ", maximum(diabatic_heating)
     grid_δt         .+= (grid_tracers_diff .* Lv ./ cp) .* L 
     
     ###

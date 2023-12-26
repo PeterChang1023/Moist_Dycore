@@ -994,7 +994,7 @@ function HS_forcing_water_vapor!(semi_implicit::Semi_Implicit_Solver, grid_trace
     factor3          .= grid_tracers_diff
     diabatic_heating  = deepcopy(grid_tracers_diff)
     diabatic_heating .= (grid_tracers_diff .* Lv ./ cp) ./day_to_sec .* L 
-    @info "max: ", maximum(diabatic_heating)
+    # @info "max: ", maximum(diabatic_heating)
     grid_δt         .+= (grid_tracers_diff .* Lv ./ cp) .* L 
     
     ###
