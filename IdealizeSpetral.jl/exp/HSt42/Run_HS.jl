@@ -3,7 +3,7 @@ using JGCM
 include("HS.jl")
 
 #############################################################
-end_day = 150
+end_day = 300
 spinup_day = 0
 
 physics_params = Dict{String,Float64}("σ_b"=>0.7, "k_f" => 1.0, "k_a" => 1.0/40.0, "k_s" => 1.0/4.0, "ΔT_y" => 65.0, "Δθ_z" => 10.0) ### 60.0
@@ -29,7 +29,9 @@ op_man = Atmos_Spectral_Dynamics_Main(physics_params, end_day, spinup_day)
 # Finalize_Output!(op_man, "day200_qv_v_test_final.dat", "day200_qv_v_test_all.dat")
 
 # Finalize_Output!(op_man, "150day_factor2_n_final.dat", "150day_factor2_n_all.dat")
-Finalize_Output!(op_man, "150day_factor2_n_264_initial_final.dat", "150day_factor2_n_264_initial_all.dat")
+# Finalize_Output!(op_man, "150day_factor2_n_264_initial_final.dat", "150day_factor2_n_264_initial_all.dat")
+Finalize_Output!(op_man, "300day_factor2_n_264_initial_final.dat", "300day_factor2_n_264_initial_all.dat")
+
 
 # Finalize_Output!(op_man, "300day_moving_add_sensible_heat_final.dat", "300day_moving_add_sensible_heat_all.dat")
 
