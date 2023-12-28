@@ -80,29 +80,29 @@ mutable struct Output_Manager
     grid_δps_xyzt::Array{Float64,4}
 
     ### 
-    grid_t_eq_ref_xyzt::Array{Float64,4}
+    # grid_t_eq_ref_xyzt::Array{Float64,4}
     grid_z_full_xyzt::Array{Float64,4}
     grid_z_half_xyzt::Array{Float64,4}
 
     ### 11/07
-    unsaturated_n_xyzt::Array{Float64,4}
+    # unsaturated_n_xyzt::Array{Float64,4}
     
     ### 11/10
-    add_water_xyzt::Array{Float64,4}
+    # add_water_xyzt::Array{Float64,4}
     ### 11/12
     factor1_xyzt::Array{Float64,4}
     factor2_xyzt::Array{Float64,4}
     factor3_xyzt::Array{Float64,4}
-    factor4_xyzt::Array{Float64,4}
+    # factor4_xyzt::Array{Float64,4}
 
 
 
     K_E_xyzt::Array{Float64,4}
-    pqpz_xyzt::Array{Float64,4}
+    # pqpz_xyzt::Array{Float64,4}
 
     rho_xyzt::Array{Float64,4}
 
-    qv_global_intergral_xyzt::Array{Float64, 4}
+    # qv_global_intergral_xyzt::Array{Float64, 4}
 
 
 end
@@ -183,35 +183,35 @@ function Output_Manager(mesh::Spectral_Spherical_Mesh, vert_coord::Vert_Coordina
     grid_δt_xyzt = zeros(Float64, nλ,  nθ, nd, n_day)
     grid_δps_xyzt = zeros(Float64, nλ,  nθ, nd, n_day)   
     ###
-    grid_t_eq_ref_xyzt = zeros(Float64, nλ,  nθ, nd, n_day)  
+    # grid_t_eq_ref_xyzt = zeros(Float64, nλ,  nθ, nd, n_day)  
     grid_z_full_xyzt = zeros(Float64, nλ,  nθ, nd, n_day)  
     grid_z_half_xyzt = zeros(Float64, nλ,  nθ, nd+1, n_day)  
 
     ### 11/07
-    unsaturated_n_xyzt = zeros(Float64, nλ,  nθ, nd, n_day)  
+    # unsaturated_n_xyzt = zeros(Float64, nλ,  nθ, nd, n_day)  
 
-    add_water_xyzt = zeros(Float64, nλ,  nθ, nd, n_day) 
+    # add_water_xyzt = zeros(Float64, nλ,  nθ, nd, n_day) 
 
     factor1_xyzt = zeros(Float64, nλ,  nθ, nd, n_day) 
     factor2_xyzt = zeros(Float64, nλ,  nθ, nd, n_day) 
     factor3_xyzt = zeros(Float64, nλ,  nθ, nd, n_day) 
-    factor4_xyzt = zeros(Float64, nλ,  nθ, nd, n_day) 
+    # factor4_xyzt = zeros(Float64, nλ,  nθ, nd, n_day) 
 
 
 
     K_E_xyzt = zeros(Float64, nλ,  nθ, nd+1, n_day)
-    pqpz_xyzt = zeros(Float64, nλ,  nθ, nd, n_day)
+    # pqpz_xyzt = zeros(Float64, nλ,  nθ, nd, n_day)
 
     rho_xyzt = zeros(Float64, nλ,  nθ, nd, n_day)
 
-    qv_global_intergral_xyzt = zeros(Float64, nλ,  nθ, nd, n_day)
+    # qv_global_intergral_xyzt = zeros(Float64, nλ,  nθ, nd, n_day)
 
     Output_Manager(nλ, nθ, nd, n_day,
     day_to_sec, start_time, end_time, current_time, spinup_day,
     λc, θc, σc,
     t_daily_zonal_mean, t_eq_daily_zonal_mean, u_daily_zonal_mean, v_daily_zonal_mean, 
     ps_daily_mean, n_daily_mean, 
-    t_zonal_mean,t_eq_zonal_mean, u_zonal_mean, v_zonal_mean, ps_mean, grid_u_c_xyzt, grid_v_c_xyzt, grid_t_c_xyzt, grid_t_eq_xyzt, grid_geopots_xyzt, grid_ps_xyzt, spe_vor_c_xyzt, spe_div_c_xyzt, grid_lnps_xyzt, grid_p_half_xyzt, grid_Δp_xyzt,  grid_lnp_half_xyzt,  grid_p_full_xyzt, grid_lnp_full_xyzt, spe_lnps_c_xyzt, spe_lnps_p_xyzt, grid_tracers_n_xyz1t, grid_tracers_c_xyz1t, grid_tracers_p_xyz1t,  grid_tracers_diff_xyz1t, spe_tracers_n_xyz1t, spe_tracers_c_xyz1t, spe_tracers_p_xyz1t, grid_w_full_xyzt, grid_vor_c_xyzt, grid_δu_xyzt, grid_δv_xyzt, grid_δt_xyzt, grid_δps_xyzt, grid_t_eq_ref_xyzt, grid_z_full_xyzt, grid_z_half_xyzt, unsaturated_n_xyzt, add_water_xyzt, factor1_xyzt, factor2_xyzt, factor3_xyzt, factor4_xyzt, K_E_xyzt, pqpz_xyzt, rho_xyzt, qv_global_intergral_xyzt)
+    t_zonal_mean,t_eq_zonal_mean, u_zonal_mean, v_zonal_mean, ps_mean, grid_u_c_xyzt, grid_v_c_xyzt, grid_t_c_xyzt, grid_t_eq_xyzt, grid_geopots_xyzt, grid_ps_xyzt, spe_vor_c_xyzt, spe_div_c_xyzt, grid_lnps_xyzt, grid_p_half_xyzt, grid_Δp_xyzt,  grid_lnp_half_xyzt,  grid_p_full_xyzt, grid_lnp_full_xyzt, spe_lnps_c_xyzt, spe_lnps_p_xyzt, grid_tracers_n_xyz1t, grid_tracers_c_xyz1t, grid_tracers_p_xyz1t,  grid_tracers_diff_xyz1t, spe_tracers_n_xyz1t, spe_tracers_c_xyz1t, spe_tracers_p_xyz1t, grid_w_full_xyzt, grid_vor_c_xyzt, grid_δu_xyzt, grid_δv_xyzt, grid_δt_xyzt, grid_δps_xyzt, grid_z_full_xyzt, grid_z_half_xyzt, factor1_xyzt, factor2_xyzt, factor3_xyzt, K_E_xyzt, rho_xyzt)
 end
 
 function Update_Output!(output_manager::Output_Manager, dyn_data::Dyn_Data, current_time::Int64)
@@ -266,28 +266,28 @@ function Update_Output!(output_manager::Output_Manager, dyn_data::Dyn_Data, curr
     grid_δt_xyzt = output_manager.grid_δu_xyzt
     grid_δps_xyzt = output_manager.grid_δu_xyzt
     ### 11/02
-    grid_t_eq_ref_xyzt = output_manager.grid_t_eq_ref_xyzt
+    # grid_t_eq_ref_xyzt = output_manager.grid_t_eq_ref_xyzt
     grid_z_full_xyzt = output_manager.grid_z_full_xyzt
     grid_z_half_xyzt = output_manager.grid_z_half_xyzt
 
     ### 11/07
-    unsaturated_n_xyzt = output_manager.unsaturated_n_xyzt
+    # unsaturated_n_xyzt = output_manager.unsaturated_n_xyzt
 
-    add_water_xyzt = output_manager.add_water_xyzt
+    # add_water_xyzt = output_manager.add_water_xyzt
     ### 11/12
     factor1_xyzt = output_manager.factor1_xyzt
     factor2_xyzt = output_manager.factor2_xyzt
     factor3_xyzt = output_manager.factor3_xyzt
-    factor4_xyzt = output_manager.factor4_xyzt
+    # factor4_xyzt = output_manager.factor4_xyzt
 
 
 
 
     K_E_xyzt = output_manager.K_E_xyzt
-    pqpz_xyzt = output_manager.pqpz_xyzt
+    # pqpz_xyzt = output_manager.pqpz_xyzt
 
     rho_xyzt = output_manager.rho_xyzt
-    qv_global_intergral_xyzt = output_manager.qv_global_intergral_xyzt
+    # qv_global_intergral_xyzt = output_manager.qv_global_intergral_xyzt
 
 
     
@@ -346,30 +346,30 @@ function Update_Output!(output_manager::Output_Manager, dyn_data::Dyn_Data, curr
     grid_δt_xyzt[:,:,:,i_day]  .= dyn_data.grid_δt[:,:,:]
     grid_δps_xyzt[:,:,:,i_day] .= dyn_data.grid_δps[:,:,:]
     ### 11/02
-    grid_t_eq_ref_xyzt[:,:,:,i_day] .= dyn_data.grid_t_eq_ref[:,:,:]
+    # grid_t_eq_ref_xyzt[:,:,:,i_day] .= dyn_data.grid_t_eq_ref[:,:,:]
     grid_z_full_xyzt[:,:,:,i_day] .= dyn_data.grid_z_full[:,:,:]
     grid_z_half_xyzt[:,:,:,i_day] .= dyn_data.grid_z_half[:,:,:]
 
     ### 11/07
-    unsaturated_n_xyzt[:,:,:,i_day] .= dyn_data.unsaturated_n[:,:,:]
+    # unsaturated_n_xyzt[:,:,:,i_day] .= dyn_data.unsaturated_n[:,:,:]
     
     ### 11/10
-    add_water_xyzt[:,:,:,i_day] .= dyn_data.add_water[:,:,:]
+    # add_water_xyzt[:,:,:,i_day] .= dyn_data.add_water[:,:,:]
     #print(maximum(grid_tracers_c_xyz1t))
     ### 11/12
     factor1_xyzt[:,:,:,i_day] .= dyn_data.factor1[:,:,:]
     factor2_xyzt[:,:,:,i_day] .= dyn_data.factor2[:,:,:]
     factor3_xyzt[:,:,:,i_day] .= dyn_data.factor3[:,:,:]
-    factor4_xyzt[:,:,:,i_day] .= dyn_data.factor4[:,:,:]
+    # factor4_xyzt[:,:,:,i_day] .= dyn_data.factor4[:,:,:]
 
 
 
     K_E_xyzt[:,:,:,i_day] .= dyn_data.K_E[:,:,:]
-    pqpz_xyzt[:,:,:,i_day] .= dyn_data.pqpz[:,:,:] 
+    # pqpz_xyzt[:,:,:,i_day] .= dyn_data.pqpz[:,:,:] 
 
     rho_xyzt[:,:,:,i_day] .= dyn_data.rho[:,:,:]
 
-    qv_global_intergral_xyzt[:,:,:,i_day] .= dyn_data.qv_global_intergral[:,:,:]
+    # qv_global_intergral_xyzt[:,:,:,i_day] .= dyn_data.qv_global_intergral[:,:,:]
 
     n_daily_mean[i_day] += 1
 end
@@ -424,27 +424,27 @@ function Finalize_Output!(output_manager::Output_Manager, save_file_name::String
     grid_δt_xyzt = output_manager.grid_δu_xyzt
     grid_δps_xyzt = output_manager.grid_δu_xyzt
     ### 11/02
-    grid_t_eq_ref_xyzt = output_manager.grid_t_eq_ref_xyzt
+    # grid_t_eq_ref_xyzt = output_manager.grid_t_eq_ref_xyzt
     grid_z_full_xyzt = output_manager.grid_z_full_xyzt
     grid_z_half_xyzt = output_manager.grid_z_half_xyzt
 
     ### 11/07
-    unsaturated_n_xyzt = output_manager.unsaturated_n_xyzt
+    # unsaturated_n_xyzt = output_manager.unsaturated_n_xyzt
     
-    add_water_xyzt = output_manager.add_water_xyzt
+    # add_water_xyzt = output_manager.add_water_xyzt
     ### 11/12
     factor1_xyzt = output_manager.factor1_xyzt
     factor2_xyzt = output_manager.factor2_xyzt
     factor3_xyzt = output_manager.factor3_xyzt
-    factor4_xyzt = output_manager.factor4_xyzt
+    # factor4_xyzt = output_manager.factor4_xyzt
 
 
 
     K_E_xyzt = output_manager.K_E_xyzt
-    pqpz_xyzt = output_manager.pqpz_xyzt
+    # pqpz_xyzt = output_manager.pqpz_xyzt
     
     rho_xyzt = output_manager.rho_xyzt
-    qv_global_intergral_xyzt = output_manager.qv_global_intergral_xyzt
+    # qv_global_intergral_xyzt = output_manager.qv_global_intergral_xyzt
 
 
 
@@ -469,11 +469,11 @@ function Finalize_Output!(output_manager::Output_Manager, save_file_name::String
     ps_mean .= dropdims(mean(ps_daily_mean[:,:,spinup_day+1:n_day], dims=3), dims=3)
        
     if save_file_name != "None"
-        @save save_file_name grid_u_c_xyzt grid_v_c_xyzt grid_t_c_xyzt grid_t_eq_xyzt grid_geopots_xyzt grid_ps_xyzt spe_vor_c_xyzt spe_div_c_xyzt grid_lnps_xyzt grid_p_half_xyzt grid_Δp_xyzt grid_lnp_half_xyzt grid_p_full_xyzt grid_lnp_full_xyzt spe_lnps_c_xyzt spe_lnps_p_xyzt grid_tracers_c_xyz1t grid_tracers_n_xyz1t grid_tracers_p_xyz1t grid_tracers_diff_xyz1t grid_w_full_xyzt grid_vor_c_xyzt grid_δu_xyzt grid_δv_xyzt grid_δt_xyzt grid_δps_xyzt grid_t_eq_ref_xyzt grid_z_full_xyzt grid_z_half_xyzt unsaturated_n_xyzt add_water_xyzt factor1_xyzt factor2_xyzt factor3_xyzt factor4_xyzt K_E_xyzt pqpz_xyzt rho_xyzt qv_global_intergral_xyzt 
+        @save save_file_name grid_u_c_xyzt grid_v_c_xyzt grid_t_c_xyzt grid_t_eq_xyzt grid_geopots_xyzt grid_ps_xyzt spe_vor_c_xyzt spe_div_c_xyzt grid_lnps_xyzt grid_p_half_xyzt grid_Δp_xyzt grid_lnp_half_xyzt grid_p_full_xyzt grid_lnp_full_xyzt spe_lnps_c_xyzt spe_lnps_p_xyzt grid_tracers_c_xyz1t grid_tracers_n_xyz1t grid_tracers_p_xyz1t grid_tracers_diff_xyz1t grid_w_full_xyzt grid_vor_c_xyzt grid_δu_xyzt grid_δv_xyzt grid_δt_xyzt grid_δps_xyzt grid_z_full_xyzt grid_z_half_xyzt factor1_xyzt factor2_xyzt factor3_xyzt rho_xyzt 
     end
 
     if mean_save_file_name != "None"
-        @save mean_save_file_name grid_u_c_xyzt grid_v_c_xyzt grid_t_c_xyzt grid_t_eq_xyzt grid_geopots_xyzt grid_ps_xyzt spe_vor_c_xyzt spe_div_c_xyzt grid_lnps_xyzt grid_p_half_xyzt grid_Δp_xyzt grid_lnp_half_xyzt grid_p_full_xyzt grid_lnp_full_xyzt spe_lnps_c_xyzt spe_lnps_p_xyzt grid_tracers_c_xyz1t grid_tracers_n_xyz1t grid_tracers_p_xyz1t grid_tracers_diff_xyz1t grid_w_full_xyzt grid_vor_c_xyzt grid_δu_xyzt grid_δv_xyzt grid_δt_xyzt grid_δps_xyzt grid_t_eq_ref_xyzt grid_z_full_xyzt grid_z_half_xyzt unsaturated_n_xyzt add_water_xyzt factor1_xyzt factor2_xyzt factor3_xyzt factor4_xyzt K_E_xyzt pqpz_xyzt rho_xyzt qv_global_intergral_xyzt 
+        @save mean_save_file_name grid_u_c_xyzt grid_v_c_xyzt grid_t_c_xyzt grid_t_eq_xyzt grid_geopots_xyzt grid_ps_xyzt spe_vor_c_xyzt spe_div_c_xyzt grid_lnps_xyzt grid_p_half_xyzt grid_Δp_xyzt grid_lnp_half_xyzt grid_p_full_xyzt grid_lnp_full_xyzt spe_lnps_c_xyzt spe_lnps_p_xyzt grid_tracers_c_xyz1t grid_tracers_n_xyz1t grid_tracers_p_xyz1t grid_tracers_diff_xyz1t grid_w_full_xyzt grid_vor_c_xyzt grid_δu_xyzt grid_δv_xyzt grid_δt_xyzt grid_δps_xyzt grid_z_full_xyzt grid_z_half_xyzt  factor1_xyzt factor2_xyzt factor3_xyzt rho_xyzt  
     end
 end
 

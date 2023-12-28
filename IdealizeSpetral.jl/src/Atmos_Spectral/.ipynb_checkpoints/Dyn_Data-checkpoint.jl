@@ -158,38 +158,38 @@ mutable struct Dyn_Data
     grid_d_half1::Array{Float64,3}
     grid_d_half2::Array{Float64,3}
     
-    spe_zeros::Array{ComplexF64,3}
+    # spe_zeros::Array{ComplexF64,3}
     
     ### 10/31
-    grid_t_eq_ref::Array{Float64,3}
-    grid_tracers_ref::Array{Float64,3}
+    # grid_t_eq_ref::Array{Float64,3}
+    # grid_tracers_ref::Array{Float64,3}
     
     # spe_tracers_q_n::Array{ComplexF64,3}
     # spe_tracers_q_c::Array{ComplexF64,3}
     # spe_tracers_q_p::Array{ComplexF64,3}
     
-    spe_tracers_ref::Array{ComplexF64,3}
+    # spe_tracers_ref::Array{ComplexF64,3}
 
     ### 11/07
-    unsaturated_n::Array{Float64,3}
+    # unsaturated_n::Array{Float64,3}
 
     ### 11/10
-    add_water::Array{Float64,3}
+    # add_water::Array{Float64,3}
 
     ### 11/12
     factor1::Array{Float64,3}
     factor2::Array{Float64,3}
     factor3::Array{Float64,3}
-    factor4::Array{Float64,3}
+    # factor4::Array{Float64,3}
 
 
 
     K_E::Array{Float64,3}
-    pqpz::Array{Float64,3}
+    # pqpz::Array{Float64,3}
     
     rho::Array{Float64,3}
 
-    qv_global_intergral::Array{Float64, 3}
+    # qv_global_intergral::Array{Float64, 3}
 
 
 
@@ -335,35 +335,35 @@ function Dyn_Data(name::String, num_fourier::Int64, num_spherical::Int64, nλ::I
     grid_d_half2 = zeros(Float64, nλ,  nθ, nd+1)
     
 
-    spe_zeros = zeros(ComplexF64, num_fourier+1, num_spherical+1, nd)
+    # spe_zeros = zeros(ComplexF64, num_fourier+1, num_spherical+1, nd)
     
     ### 10/31
-    grid_t_eq_ref   = zeros(Float64, nλ,  nθ, nd)
-    grid_tracers_ref = zeros(Float64, nλ,  nθ, nd)
+    # grid_t_eq_ref   = zeros(Float64, nλ,  nθ, nd)
+    # grid_tracers_ref = zeros(Float64, nλ,  nθ, nd)
     
     # spe_tracers_q_n = zeros(ComplexF64, num_fourier+1, num_spherical+1, nd)
     # spe_tracers_q_c = zeros(ComplexF64, num_fourier+1, num_spherical+1, nd)
     # spe_tracers_q_p = zeros(ComplexF64, num_fourier+1, num_spherical+1, nd)
     
-    spe_tracers_ref = zeros(ComplexF64, num_fourier+1, num_spherical+1, nd)
+    # spe_tracers_ref = zeros(ComplexF64, num_fourier+1, num_spherical+1, nd)
     ### 11/07
-    unsaturated_n = zeros(Float64, nλ,  nθ, nd)
+    # unsaturated_n = zeros(Float64, nλ,  nθ, nd)
 
-    add_water = zeros(Float64, nλ,  nθ, nd)
+    # add_water = zeros(Float64, nλ,  nθ, nd)
 
     factor1 = zeros(Float64, nλ,  nθ, nd)
     factor2 = zeros(Float64, nλ,  nθ, nd)
     factor3 = zeros(Float64, nλ,  nθ, nd)
-    factor4 = zeros(Float64, nλ,  nθ, nd)
+    # factor4 = zeros(Float64, nλ,  nθ, nd)
 
 
 
     K_E = zeros(Float64, nλ,  nθ, nd+1)
-    pqpz = zeros(Float64, nλ,  nθ, nd)
+    # pqpz = zeros(Float64, nλ,  nθ, nd)
 
     rho = zeros(Float64, nλ,  nθ, nd)
 
-    qv_global_intergral = zeros(Float64, nλ,  nθ, nd)
+    # qv_global_intergral = zeros(Float64, nλ,  nθ, nd)
 
 
 
@@ -398,7 +398,7 @@ function Dyn_Data(name::String, num_fourier::Int64, num_spherical::Int64, nλ::I
     grid_z_full, grid_z_half,grid_t_eq,
     #########################################################################
     spe_d1, spe_d2, grid_d_full1, grid_d_full2, grid_d_half1, grid_d_half2,
-    spe_zeros, grid_t_eq_ref, grid_tracers_ref, spe_tracers_ref, unsaturated_n, add_water, factor1, factor2, factor3, factor4, K_E, pqpz, rho,  qv_global_intergral)
+    factor1, factor2, factor3, K_E, rho)
 end
 
 function Time_Advance!(dyn_data::Dyn_Data)
