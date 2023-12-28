@@ -1,7 +1,7 @@
 using JGCM
 
 
-function Atmos_Spectral_Dynamics_Main(physcis_params::Dict{String, Float64}, end_day::Int64 = 5, spinup_day::Int64 = 0)
+function Atmos_Spectral_Dynamics_Main(physcis_params::Dict{String, Float64}, end_day::Int64, spinup_day::Int64)
     # the decay of a sinusoidal disturbance to a zonally symmetric flow 
     # that resembles that found in the upper troposphere in Northern winter.
     name = "Spectral_Dynamics"
@@ -55,7 +55,7 @@ function Atmos_Spectral_Dynamics_Main(physcis_params::Dict{String, Float64}, end
 
 
     # Data Visualization
-    op_man= Output_Manager(mesh, vert_coord, start_time, end_time, spinup_day)
+    op_man = Output_Manager(mesh, vert_coord, start_time, end_time, spinup_day)
         
     
     # Initialize data
