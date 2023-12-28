@@ -399,6 +399,10 @@ function Spectral_Dynamics!(mesh::Spectral_Spherical_Mesh,  vert_coord::Vert_Coo
     # compute moisture flux 
     """
     V_a = V_c[:,:,20]
+    ### 12/28 upgrade output_manager
+    # oringin is K_E = dyn_data.K_E
+    # K_E = zeros(((128,64,20+1)))
+    ###
     for i in 17:21
         K_E[:,:,i] .= C_E .* V_a .* za[:,:,1]
     end
