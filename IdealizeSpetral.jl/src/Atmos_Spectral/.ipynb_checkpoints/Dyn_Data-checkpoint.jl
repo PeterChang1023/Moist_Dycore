@@ -68,7 +68,7 @@ mutable struct Dyn_Data
     grid_tracers_diff::Array{Float64,3}
     
     ### By CJY3
-    grid_tracers_full::Array{Float64,3}
+    # grid_tracers_full::Array{Float64,3}
 
     ############################################################
     # Memory contrainer for temporal variables
@@ -184,10 +184,10 @@ mutable struct Dyn_Data
 
 
 
-    K_E::Array{Float64,3}
+    # K_E::Array{Float64,3}
     # pqpz::Array{Float64,3}
     
-    rho::Array{Float64,3}
+    # rho::Array{Float64,3}
 
     # qv_global_intergral::Array{Float64, 3}
 
@@ -254,7 +254,7 @@ function Dyn_Data(name::String, num_fourier::Int64, num_spherical::Int64, nλ::I
     grid_tracers_diff = zeros(Float64, nλ,  nθ, nd)
     
     ## By CJY3
-    grid_tracers_full = zeros(Float64, nλ,  nθ, nd)
+    # grid_tracers_full = zeros(Float64, nλ,  nθ, nd)
     ############################################################
     # Memory contrainer for temporal variables
 
@@ -381,7 +381,7 @@ function Dyn_Data(name::String, num_fourier::Int64, num_spherical::Int64, nλ::I
     grid_v_n, grid_v_c, grid_v_p,
     grid_ps_n, grid_ps_c, grid_ps_p, 
     grid_t_n, grid_t_c, grid_t_p,
-    grid_tracers_n, grid_tracers_c, grid_tracers_p, grid_tracers_full, grid_tracers_diff,
+    grid_tracers_n, grid_tracers_c, grid_tracers_p, grid_tracers_diff,
     #########################################################################
     spe_δvor, grid_vor, grid_δvor,  
     spe_δdiv, grid_div, grid_δdiv, 
