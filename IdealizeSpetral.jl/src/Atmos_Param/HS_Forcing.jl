@@ -1,37 +1,3 @@
-function HS_Forcing_return_teq!(atmo_data::Atmo_Data, Δt::Int64, sinθ::Array{Float64, 1}, grid_u::Array{Float64, 3}, grid_v::Array{Float64, 3}, grid_p_half::Array{Float64, 3}, grid_p_full::Array{Float64, 3}, grid_t::Array{Float64, 3}, 
-    grid_δu::Array{Float64, 3}, grid_δv::Array{Float64, 3}, grid_t_eq::Array{Float64, 3}, grid_δt::Array{Float64, 3}, physcis_params::Dict{String, Float64})
-    # reset grid_δu, grid_δv, grid_t_eq, grid_δt
-    
-    #todo delete
-    #@info "HS_Forcing", sum(abs.(grid_u)), sum(abs.(grid_v)), sum(abs.(grid_t)) , sum(abs.(grid_p_half)), sum(abs.(grid_p_full))
-
-    σ_b = physcis_params["σ_b"]  
-    k_f = physcis_params["k_f"]  #day^{-1}
-    k_a = physcis_params["k_a"]  #day^{-1}
-    k_s = physcis_params["k_s"]  #day^{-1}
-    ΔT_y = physcis_params["ΔT_y"] #K
-    Δθ_z = physcis_params["Δθ_z"] #K
-
-    # rayleigh damping of wind components near the surface
-
-    Rayleigh_Damping!(atmo_data, grid_p_half, grid_p_full, grid_u, grid_v, grid_δu, grid_δv, 
-                        σ_b, k_f)
-
-    #todo 
-    grid_δt .= 0.0
-    do_conserve_energy = true
-    if (do_conserve_energy) 
-        cp_air = atmo_data.cp_air
-        grid_δt .= -((grid_u + 0.5*grid_δu*Δt).*grid_δu + (grid_v + 0.5*grid_δv*Δt).*grid_δv)/cp_air
-    end
-    
-    
-    #thermal forcing for held & suarez (1994) benchmark calculation
-    
-    Newtonian_Damping!(atmo_data, sinθ, grid_p_half, grid_p_full, grid_t, grid_t_eq, grid_δt, σ_b, k_a, k_s, ΔT_y, Δθ_z)
-    return grid_t_eq
-end 
-
 function HS_Forcing!(atmo_data::Atmo_Data, Δt::Int64, sinθ::Array{Float64, 1}, grid_u::Array{Float64, 3}, grid_v::Array{Float64, 3}, grid_p_half::Array{Float64, 3}, grid_p_full::Array{Float64, 3}, grid_t::Array{Float64, 3}, 
     grid_δu::Array{Float64, 3}, grid_δv::Array{Float64, 3}, grid_t_eq::Array{Float64, 3}, grid_δt::Array{Float64, 3}, physcis_params::Dict{String, Float64})
     # reset grid_δu, grid_δv, grid_t_eq, grid_δt
