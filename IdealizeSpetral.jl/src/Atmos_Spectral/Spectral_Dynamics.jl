@@ -610,28 +610,28 @@ function Spectral_Dynamics!(mesh::Spectral_Spherical_Mesh,  vert_coord::Vert_Coo
     return 
 end 
 
-function Get_Topography!(grid_geopots::Array{Float64, 3})
-    original_start = true
-    load_old_file  = false
-    if original_start
+function Get_Topography!(grid_geopots::Array{Float64, 3}, warm_start_file_name::String = "None")
+    # original_start = true
+    # load_old_file  = false
+    if warm_start_file_name == "None" # load warm start file
         grid_geopots .= 0.0
     end
     ### 2023/10/25
     # read_file     = load("/work/kaichiht/Colab/2023_research/annular_mode/300day_dry_run_all.dat")
     # grid_geopots .= read_file["grid_geopots_xyzt"][:,:,1,300]
-    if load_old_file
-        initial_day = 300
-        read_file = load("500day_1226_test_final.dat")
+    if warm_start_file_name != "None" # load warm start file
+        initial_day   = 5
+        read_file     = load(warm_start_file_name)
         grid_geopots .= read_file["grid_geopots_xyzt"][:,:,:,initial_day]
     end
     
     return
 end 
 
-function Spectral_Initialize_Fields!(mesh::Spectral_Spherical_Mesh, atmo_data::Atmo_Data, vert_coord::Vert_Coordinate, sea_level_ps_ref::Float64, init_t::Float64, grid_geopots::Array{Float64,3}, dyn_data::Dyn_Data, Δt::Int64, physics_params::Dict{String, Float64})
-    load_old_file  = false
-    original_start = true
-    if load_old_file
+function Spectral_Initialize_Fields!(mesh::Spectral_Spherical_Mesh, atmo_data::Atmo_Data, vert_coord::Vert_Coordinate, sea_level_ps_ref::Float64, init_t::Float64, grid_geopots::Array{Float64,3}, dyn_data::Dyn_Data, Δt::Int64, warm_start_file_name::String = "None", initial_day::Int64 = 5)
+    # load_old_file  = false
+    # original_start = true
+    if warm_start_file_name != "None" # load warm start file
         spe_vor_c, spe_div_c, spe_lnps_c, spe_t_c = dyn_data.spe_vor_c, dyn_data.spe_div_c, dyn_data.spe_lnps_c, dyn_data.spe_t_c
         spe_vor_p, spe_div_p, spe_lnps_p, spe_t_p = dyn_data.spe_vor_p, dyn_data.spe_div_p, dyn_data.spe_lnps_p, dyn_data.spe_t_p
         grid_u, grid_v, grid_ps, grid_t           = dyn_data.grid_u_c, dyn_data.grid_v_c, dyn_data.grid_ps_c, dyn_data.grid_t_c
@@ -641,57 +641,31 @@ function Spectral_Initialize_Fields!(mesh::Spectral_Spherical_Mesh, atmo_data::A
         
         grid_p_half, grid_Δp, grid_lnp_half, grid_p_full, grid_lnp_full = dyn_data.grid_p_half, dyn_data.grid_Δp, dyn_data.grid_lnp_half, dyn_data.grid_p_full, dyn_data.grid_lnp_full
         nλ, nθ, nd                                = mesh.nλ, mesh.nθ, mesh.nd
+
         
         ### By CJY2
-        spe_tracers_n     = dyn_data.spe_tracers_n
         spe_tracers_c     = dyn_data.spe_tracers_c
         spe_tracers_p     = dyn_data.spe_tracers_p 
-            
+
         grid_tracers_n    = dyn_data.grid_tracers_n
         grid_tracers_c    = dyn_data.grid_tracers_c
         grid_tracers_p    = dyn_data.grid_tracers_p 
-        
-        grid_tracers_diff = dyn_data.grid_tracers_diff
-        ###
-        ### 10/31
-        grid_δu, grid_δv, grid_δps, grid_δt = dyn_data.grid_δu, dyn_data.grid_δv, dyn_data.grid_δps, dyn_data.grid_δt
-        grid_u_p, grid_v_p,  grid_t_p       = dyn_data.grid_u_p, dyn_data.grid_v_p, dyn_data.grid_t_p
-        grid_p_half, grid_p_full            = dyn_data.grid_p_half, dyn_data.grid_p_full
-        
-        ### 11/08
-        grid_z_full = dyn_data.grid_z_full
-        grid_w_full = dyn_data.grid_w_full
+        ########################################################
+        # Tendency 
+        grid_δu = dyn_data.grid_δu
+        grid_δv = dyn_data.grid_δv
 
-        
-        # ### 11/02
-        # read_file      = load("/work/kaichiht/Colab/2023_research/annular_mode/300day_dry_run_all.dat")
-        read_file = load("500day_1226_test_final.dat")
-        initial_day    = 300
-        # # ### 11/08
-        grid_z_full   .= read_file["grid_z_full_xyzt"][:,:,:,initial_day]
-        grid_w_full   .= read_file["grid_w_full_xyzt"][:,:,:,initial_day]
-        # ###
-        grid_δu       .= read_file["grid_δu_xyzt"][:,:,:,initial_day]
-        grid_δv       .= read_file["grid_δv_xyzt"][:,:,:,initial_day]
-        grid_δt       .= read_file["grid_δt_xyzt"][:,:,:,initial_day]
-        grid_δps      .= read_file["grid_δps_xyzt"][:,:,1,initial_day]
-
-        grid_p_half   .= read_file["grid_p_half_xyzt"][:,:,:,initial_day]
-        grid_p_full   .= read_file["grid_p_full_xyzt"][:,:,:,initial_day]
-
-        
-        
-        rdgas = atmo_data.rdgas
-        # grid_t    .= init_t
-        ### 2023/10/27
+        grid_δvor = dyn_data.grid_δvor
+        grid_δdiv = dyn_data.grid_δdiv
+        ########################################################
+        read_file = load(warm_start_file_name)        
         grid_t    .= read_file["grid_t_c_xyzt"][:,:,:,initial_day] 
         ###
         # dΦ/dlnp = -RT    Δp = -ΔΦ/RT
-        # grid_geopots .= read_file["grid_geopots_xyzt"][:,:,:,initial_day]
         # grid_lnps .= log(sea_level_ps_ref) .- grid_geopots / (rdgas * init_t)
-        grid_lnps .= read_file["grid_lnps_xyzt"][:,:,1,initial_day]
+        grid_lnps    .= log.(read_file["grid_ps_c_xyzt"][:,:,1,initial_day])
         # grid_ps   .= exp.(grid_lnps)
-        grid_ps    .= read_file["grid_ps_xyzt"][:,:,1,initial_day]
+        grid_ps      .= read_file["grid_ps_c_xyzt"][:,:,1,initial_day]
         
 
         # By CJY
@@ -721,22 +695,30 @@ function Spectral_Initialize_Fields!(mesh::Spectral_Spherical_Mesh, atmo_data::A
         # UV_Grid_From_Vor_Div!(mesh, spe_vor_c, spe_div_c, grid_u, grid_v)
         
         # initial spectral fields (and spectrally-filtered) grid fields
-        Trans_Grid_To_Spherical!(mesh, grid_t, spe_t_c)
-        Trans_Spherical_To_Grid!(mesh, spe_t_c, grid_t)
+        # Trans_Grid_To_Spherical!(mesh, grid_t, spe_t_c)
+        # Trans_Spherical_To_Grid!(mesh, spe_t_c, grid_t)
+        spe_t_c    .= read_file["spe_t_c_xyzt"][:,:,:,initial_day] 
+        
+        
 
-        Trans_Grid_To_Spherical!(mesh, grid_lnps, spe_lnps_c)
-        Trans_Spherical_To_Grid!(mesh, spe_lnps_c,  grid_lnps)
+        # Trans_Grid_To_Spherical!(mesh, grid_lnps, spe_lnps_c)
+        # Trans_Spherical_To_Grid!(mesh, spe_lnps_c,  grid_lnps)
+        spe_lnps_c    .= (read_file["spe_lnps_c_xyzt"][:,:,1,initial_day])
+        
 
         # By CJY ### grid_ps .= exp.(grid_lnps)
         #grid_ps .= read_file["grid_ps_xyzt"][:,:,1,90]
-        grid_ps .= exp.(grid_lnps)
+        # grid_ps .= exp.(grid_lnps)
         
         # Vor_Div_From_Grid_UV!(mesh, grid_u, grid_v, spe_vor_c, spe_div_c)
 
         # UV_Grid_From_Vor_Div!(mesh, spe_vor_c, spe_div_c, grid_u, grid_v)
+
+        # Trans_Spherical_To_Grid!(mesh, spe_vor_c, grid_vor) # grid_vor didn't output
+        # Trans_Spherical_To_Grid!(mesh, spe_div_c, grid_div) # grid_div didn't output
+        grid_vor .= read_file["grid_vor_xyzt"][:,:,:,initial_day]
+        grid_div .= read_file["grid_div_xyzt"][:,:,:,initial_day]
         
-        Trans_Spherical_To_Grid!(mesh, spe_vor_c, grid_vor)
-        Trans_Spherical_To_Grid!(mesh, spe_div_c, grid_div)
 
         #update pressure variables for hs forcing
         # grid_p_half   .= read_file["grid_p_half_xyzt"][:,:,:,initial_day]
@@ -744,10 +726,8 @@ function Spectral_Initialize_Fields!(mesh::Spectral_Spherical_Mesh, atmo_data::A
         # grid_lnp_half .= read_file["grid_lnp_half_xyzt"][:,:,:,initial_day]
         # grid_p_full   .= read_file["grid_p_full_xyzt"][:,:,:,initial_day]
         # grid_lnp_full .= read_file["grid_lnp_full_xyzt"][:,:,:,initial_day]
-            
         Pressure_Variables!(vert_coord, grid_ps, grid_p_half, grid_Δp,
         grid_lnp_half, grid_p_full, grid_lnp_full)
-        
         """
         spe_vor_p  .= spe_vor_c
         spe_div_p  .= spe_div_c
@@ -760,21 +740,37 @@ function Spectral_Initialize_Fields!(mesh::Spectral_Spherical_Mesh, atmo_data::A
         grid_ps_p  .= grid_ps
         grid_t_p   .= grid_t
         """
-        # spe_vor_p .= read_file["spe_vor_p_xyzt"][:,:,:,initial_day]
-        # Tracer initialization
-        ### 2023/10/25
-        grid_tracers_c .= read_file["grid_tracers_c_xyz1t"][:,:,:,initial_day]
+        spe_vor_p   .= read_file["spe_vor_p_xyzt"][:,:,:,initial_day]
+        spe_div_p   .= read_file["spe_div_p_xyzt"][:,:,:,initial_day]
+        spe_lnps_p  .= read_file["spe_lnps_p_xyzt"][:,:,:,initial_day]
+        spe_t_p     .= read_file["spe_t_p_xyzt"][:,:,:,initial_day]
 
-        Trans_Grid_To_Spherical!(mesh, grid_tracers_c, spe_tracers_c)
-        Trans_Spherical_To_Grid!(mesh, spe_tracers_c, grid_tracers_c)
+        grid_u_p    .= read_file["grid_u_p_xyzt"][:,:,:,initial_day]
+        grid_v_p    .= read_file["grid_v_p_xyzt"][:,:,:,initial_day]
+        grid_ps_p   .= read_file["grid_ps_p_xyzt"][:,:,:,initial_day]
+        grid_t_p    .= read_file["grid_t_p_xyzt"][:,:,:,initial_day]
         
+
         
+        # Tracer initialization
+        """
         # By CJY2
         spe_tracers_p  .= spe_tracers_c
         grid_tracers_p .= grid_tracers_c
+        """
+        # large precipitation need next DO NOT REMOVE IT !!!
+        grid_tracers_n .= read_file["grid_tracers_n_xyzt"][:,:,:,initial_day] 
+        grid_tracers_c .= read_file["grid_tracers_c_xyzt"][:,:,:,initial_day]
+        grid_tracers_p .= read_file["grid_tracers_p_xyzt"][:,:,:,initial_day]
+        
+        # Trans_Grid_To_Spherical!(mesh, grid_tracers_c, spe_tracers_c)
+        # Trans_Grid_To_Spherical!(mesh, grid_tracers_p, spe_tracers_p)
+        spe_tracers_c  .= read_file["spe_tracers_c_xyzt"][:,:,:,initial_day]
+        spe_tracers_p  .= read_file["spe_tracers_p_xyzt"][:,:,:,initial_day]
+        
     end
 
-    if original_start
+    if warm_start_file_name == "None" # then use original start
         spe_vor_c, spe_div_c, spe_lnps_c, spe_t_c = dyn_data.spe_vor_c, dyn_data.spe_div_c, dyn_data.spe_lnps_c, dyn_data.spe_t_c
         spe_vor_p, spe_div_p, spe_lnps_p, spe_t_p = dyn_data.spe_vor_p, dyn_data.spe_div_p, dyn_data.spe_lnps_p, dyn_data.spe_t_p
         grid_u, grid_v, grid_ps, grid_t = dyn_data.grid_u_c, dyn_data.grid_v_c, dyn_data.grid_ps_c, dyn_data.grid_t_c
@@ -784,41 +780,18 @@ function Spectral_Initialize_Fields!(mesh::Spectral_Spherical_Mesh, atmo_data::A
         
         grid_p_half, grid_Δp, grid_lnp_half, grid_p_full, grid_lnp_full = dyn_data.grid_p_half, dyn_data.grid_Δp, dyn_data.grid_lnp_half, dyn_data.grid_p_full, dyn_data.grid_lnp_full
         nλ, nθ, nd = mesh.nλ, mesh.nθ, mesh.nd
-        
-        grid_lnps,  grid_vor, grid_div            = dyn_data.grid_lnps, dyn_data.grid_vor, dyn_data.grid_div
-        
-        grid_p_half, grid_Δp, grid_lnp_half, grid_p_full, grid_lnp_full = dyn_data.grid_p_half, dyn_data.grid_Δp, dyn_data.grid_lnp_half, dyn_data.grid_p_full, dyn_data.grid_lnp_full
-        nλ, nθ, nd                                = mesh.nλ, mesh.nθ, mesh.nd
-        
+                
         ### By CJY2
-        spe_tracers_n     = dyn_data.spe_tracers_n
         spe_tracers_c     = dyn_data.spe_tracers_c
         spe_tracers_p     = dyn_data.spe_tracers_p 
             
-        grid_tracers_n    = dyn_data.grid_tracers_n
         grid_tracers_c    = dyn_data.grid_tracers_c
         grid_tracers_p    = dyn_data.grid_tracers_p 
-        
-        grid_tracers_diff = dyn_data.grid_tracers_diff
-        ###
-        ### 10/31
-        grid_δu, grid_δv, grid_δps, grid_δt = dyn_data.grid_δu, dyn_data.grid_δv, dyn_data.grid_δps, dyn_data.grid_δt
-        grid_u_p, grid_v_p,  grid_t_p       = dyn_data.grid_u_p, dyn_data.grid_v_p, dyn_data.grid_t_p
-        grid_p_half, grid_p_full            = dyn_data.grid_p_half, dyn_data.grid_p_full
-        
-        ### 11/08
-        grid_z_full = dyn_data.grid_z_full
-        grid_w_full = dyn_data.grid_w_full
-       
-      
-        θc              = mesh.θc # lat
+
         rdgas = atmo_data.rdgas
-        grid_t         .=  init_t # 271.
-        # for j in 1:64
-        #     grid_t[:,j,20] .= 29. .* exp(-(θc[j]^2 / (2. * (26. * pi / 180.)^2))) .+ 271.
-        # end
+        grid_t         .=  init_t 
         # dΦ/dlnp = -RT    Δp = -ΔΦ/RT
-        grid_lnps[:,:,1] .= log(sea_level_ps_ref) .- grid_geopots[:,:,1] ./ (rdgas * init_t) # grid_t[:,:,20]
+        grid_lnps[:,:,1] .= log(sea_level_ps_ref) .- grid_geopots[:,:,1] ./ (rdgas * init_t) 
         grid_ps   .= exp.(grid_lnps)
         
         
@@ -850,8 +823,6 @@ function Spectral_Initialize_Fields!(mesh::Spectral_Spherical_Mesh, atmo_data::A
         Trans_Spherical_To_Grid!(mesh, spe_lnps_c,  grid_lnps)
         grid_ps .= exp.(grid_lnps)
         
-        
-        
       
         Vor_Div_From_Grid_UV!(mesh, grid_u, grid_v, spe_vor_c, spe_div_c)
       
@@ -880,10 +851,7 @@ function Spectral_Initialize_Fields!(mesh::Spectral_Spherical_Mesh, atmo_data::A
         initial_RH      = 0.8
         Lv              = 2.5*10^6.
         Rv              = 461.
-        ### 2023/10/25
-        # grid_tracers_c .= (0.622 .* (611.12 .* exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ grid_t)) .* initial_RH)) ./ (grid_p_full .- 0.378 .* (611.12 .* exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ grid_t)) .* initial_RH))     
         qv0             = 0.018
-        # λc = mesh.λc # lon
         θc              = mesh.θc # lat
         phi_hw          = 2 * pi / 9 * deg2rad(40)
         p_hw            = 30000.
@@ -892,16 +860,14 @@ function Spectral_Initialize_Fields!(mesh::Spectral_Spherical_Mesh, atmo_data::A
         for k in 1:20
             for j in 1:64
                for i in 1:128
-                   grid_tracers_c[i,j,k] = qv0 * exp(-((grid_p_full[i,j,k]/grid_ps[i,j,1] - 1.)*(p0/p_hw))^2) * exp(-((deg2rad(phi[j]))/phi_hw)^4) 
+                   # grid_tracers_c[i,j,k] = qv0 * exp(-((grid_p_full[i,j,k]/grid_ps[i,j,1] - 1.)*(p0/p_hw))^2) * exp(-((deg2rad(phi[j]))/phi_hw)^4) 
+                   grid_tracers_c[i,j,k] = qv0 * exp(-((grid_p_full[i,j,k]/grid_ps[i,j,1] - 1.)*(p0/p_hw))^2) * exp(-((θc[j])/phi_hw)^4) 
+                    
                end            
             end
         end
         grid_tracers_c[:,:,1] .= 0.
-        ###
-        # grid_tracers_c .= read_file["grid_tracers_c_xyz1t"][:,:,:,initial_day]
-        ###
         
-        ###
         Trans_Grid_To_Spherical!(mesh, grid_tracers_c, spe_tracers_c)
         Trans_Spherical_To_Grid!(mesh, spe_tracers_c, grid_tracers_c)
     end
