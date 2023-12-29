@@ -608,6 +608,7 @@ function Spectral_Initialize_Fields!(mesh::Spectral_Spherical_Mesh, atmo_data::A
         nλ, nθ, nd                                = mesh.nλ, mesh.nθ, mesh.nd
         
         ### By CJY2
+        grid_t_n          = dyn_data.grid_t_n
         spe_tracers_c     = dyn_data.spe_tracers_c
         spe_tracers_p     = dyn_data.spe_tracers_p 
 
@@ -621,6 +622,9 @@ function Spectral_Initialize_Fields!(mesh::Spectral_Spherical_Mesh, atmo_data::A
 
         grid_δvor = dyn_data.grid_δvor
         grid_δdiv = dyn_data.grid_δdiv
+
+        grid_δtracers = dyn_data.grid_δtracers
+        grid_t_eq     = dyn_data.grid_t_eq
         ########################################################
         read_file     = load(warm_start_file_name)        
         grid_t       .= read_file["grid_t_c_xyzt"][:,:,:,initial_day] 
@@ -667,6 +671,23 @@ function Spectral_Initialize_Fields!(mesh::Spectral_Spherical_Mesh, atmo_data::A
         # Trans_Grid_To_Spherical!(mesh, grid_tracers_p, spe_tracers_p)
         spe_tracers_c  .= read_file["spe_tracers_c_xyzt"][:,:,:,initial_day]
         spe_tracers_p  .= read_file["spe_tracers_p_xyzt"][:,:,:,initial_day]
+
+        grid_δu .= read_file["grid_δu_xyzt"][:,:,:,initial_day]
+        grid_δv .= read_file["grid_δv_xyzt"][:,:,:,initial_day]
+
+        # grid_δvor .= read_file["grid_δvor_xyzt"][:,:,:,initial_day]
+        # grid_δdiv .= read_file["grid_δdiv_xyzt"][:,:,:,initial_day]
+
+        grid_t_n    .= read_file["grid_t_n_xyzt"][:,:,:,initial_day] # grid_diff would destroy
+        
+        grid_δtracers .= read_file["grid_δtracers_xyzt"][:,:,:,initial_day]
+        grid_t_eq     .= read_file["grid_t_eq_xyzt"][:,:,:,initial_day]
+        
+        
+        
+        
+
+        
         
     end
 
