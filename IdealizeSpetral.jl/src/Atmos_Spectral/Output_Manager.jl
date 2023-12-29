@@ -17,8 +17,6 @@ mutable struct Output_Manager
     θc::Array{Float64, 1}
     σc::Array{Float64, 1}
 
-    # ps_daily_mean::Array{Float64, 3}
-
     n_daily_mean::Array{Float64, 1}
     
     
@@ -61,6 +59,7 @@ mutable struct Output_Manager
     grid_t_p_xyzt::Array{Float64, 4}
 
     # grid tracer
+    grid_tracers_n_xyzt::Array{Float64,4}
     grid_tracers_c_xyzt::Array{Float64,4}
     grid_tracers_p_xyzt::Array{Float64,4}
 
@@ -78,50 +77,19 @@ mutable struct Output_Manager
     # geopotential
     grid_geopots_xyzt::Array{Float64,4}
     
-    """
     # Memory contrainer for temporal variables
-
     # vor
-    spe_δvor_xyzt::Array{ComplexF64,4}
     grid_vor_xyzt::Array{Float64,4}
-    grid_δvor_xyzt::Array{Float64,4}
 
     # div
-    spe_δdiv_xyzt::Array{ComplexF64,4}
     grid_div_xyzt::Array{Float64,4}
-    grid_δdiv_xyzt::Array{Float64,4}
 
     # w-e velocity tendency
-    spec_δu_xyzt::Array{ComplexF64,4}
     grid_δu_xyzt::Array{Float64,4}
     
     # n-s velocity tendency
-    spec_δv_xyzt::Array{ComplexF64,4}
     grid_δv_xyzt::Array{Float64,4}
 
-    # pressure     
-    spe_δlnps_xyzt::Array{ComplexF64,4}
-    grid_lnps_xyzt::Array{Float64,4}
-    grid_δlnps_xyzt::Array{Float64,4}
-    """
-    
-    # grid_lnps_xyzt::Array{Float64,4} => use grid_ps_xyzt to cal
-
-    
-    ###
-    # grid_w_full_xyzt::Array{Float64,4}
-    ###
-    
-    # ###
-    # grid_δu_xyzt::Array{Float64,4}
-    # grid_δv_xyzt::Array{Float64,4}
-    # grid_δt_xyzt::Array{Float64,4}
-    # grid_δps_xyzt::Array{Float64,4}
-
-    ### 
-    # grid_t_eq_ref_xyzt::Array{Float64,4}
-    # grid_z_full_xyzt::Array{Float64,4}
-    # grid_z_half_xyzt::Array{Float64,4}
 end
 
 function Output_Manager(mesh::Spectral_Spherical_Mesh, vert_coord::Vert_Coordinate, start_time::Int64, end_time::Int64, spinup_day::Int64, num_grid_tracters::Int64=1, num_spe_tracters::Int64=1) ### By CJY2
@@ -183,6 +151,7 @@ function Output_Manager(mesh::Spectral_Spherical_Mesh, vert_coord::Vert_Coordina
     grid_t_p_xyzt  = zeros(Float64, nλ,  nθ, nd, n_day)
 
     # grid tracer
+    grid_tracers_n_xyzt    = zeros(Float64, nλ,  nθ, nd, n_day)
     grid_tracers_c_xyzt    = zeros(Float64, nλ,  nθ, nd, n_day)
     grid_tracers_p_xyzt    = zeros(Float64, nλ,  nθ, nd, n_day)
     grid_tracers_diff_xyzt  = zeros(Float64, nλ,  nθ, nd, n_day)
@@ -199,12 +168,19 @@ function Output_Manager(mesh::Spectral_Spherical_Mesh, vert_coord::Vert_Coordina
     
     # geopotential
     grid_geopots_xyzt = zeros(Float64, nλ,  nθ, 1, n_day)
-
+    ################################################
+    grid_vor_xyzt  = zeros(Float64, nλ,  nθ, nd, n_day) 
+    grid_div_xyzt  = zeros(Float64, nλ,  nθ, nd, n_day) 
+    
+    # Tendency
+    grid_δu_xyzt  = zeros(Float64, nλ,  nθ, nd, n_day) 
+    grid_δv_xyzt  = zeros(Float64, nλ,  nθ, nd, n_day) 
+        
     
 
     Output_Manager(nλ, nθ, nd, n_day,
     day_to_sec, start_time, end_time, current_time, spinup_day,
-    λc, θc, σc, n_daily_mean, spe_vor_c_xyzt, spe_vor_p_xyzt, spe_div_c_xyzt, spe_div_p_xyzt, spe_lnps_c_xyzt, spe_lnps_p_xyzt, spe_t_c_xyzt, spe_t_p_xyzt, spe_tracers_c_xyzt, spe_tracers_p_xyzt, grid_u_c_xyzt, grid_u_p_xyzt, grid_v_c_xyzt, grid_v_p_xyzt, grid_ps_c_xyzt, grid_ps_p_xyzt, grid_t_c_xyzt, grid_t_p_xyzt, grid_tracers_c_xyzt, grid_tracers_p_xyzt, grid_tracers_diff_xyzt, factor1_xyzt, factor2_xyzt, factor3_xyzt, grid_p_full_xyzt, grid_p_half_xyzt, grid_geopots_xyzt)
+    λc, θc, σc, n_daily_mean, spe_vor_c_xyzt, spe_vor_p_xyzt, spe_div_c_xyzt, spe_div_p_xyzt, spe_lnps_c_xyzt, spe_lnps_p_xyzt, spe_t_c_xyzt, spe_t_p_xyzt, spe_tracers_c_xyzt, spe_tracers_p_xyzt, grid_u_c_xyzt, grid_u_p_xyzt, grid_v_c_xyzt, grid_v_p_xyzt, grid_ps_c_xyzt, grid_ps_p_xyzt, grid_t_c_xyzt, grid_t_p_xyzt, grid_tracers_n_xyzt, grid_tracers_c_xyzt, grid_tracers_p_xyzt, grid_tracers_diff_xyzt, factor1_xyzt, factor2_xyzt, factor3_xyzt, grid_p_full_xyzt, grid_p_half_xyzt, grid_geopots_xyzt, grid_vor_xyzt, grid_div_xyzt, grid_δu_xyzt, grid_δv_xyzt)
 end
 
 function Update_Output!(output_manager::Output_Manager, dyn_data::Dyn_Data, current_time::Int64)
@@ -212,13 +188,9 @@ function Update_Output!(output_manager::Output_Manager, dyn_data::Dyn_Data, curr
     output_manager.current_time = current_time
     day_to_sec, start_time, n_day = output_manager.day_to_sec, output_manager.start_time, output_manager.n_day
 
-    # t_daily_zonal_mean, t_eq_daily_zonal_mean, u_daily_zonal_mean, v_daily_zonal_mean, ps_daily_mean, n_daily_mean = 
-    # output_manager.t_daily_zonal_mean, output_manager.t_eq_daily_zonal_mean,
-    # output_manager.u_daily_zonal_mean, output_manager.v_daily_zonal_mean, 
-    # output_manager.ps_daily_mean, output_manager.n_daily_mean
     n_daily_mean = output_manager.n_daily_mean
     ### By CJY
-    #########################################################
+    ############################################################
     # specral vor 
     spe_vor_c_xyzt  = output_manager.spe_vor_c_xyzt
     spe_vor_p_xyzt  = output_manager.spe_vor_p_xyzt
@@ -238,7 +210,7 @@ function Update_Output!(output_manager::Output_Manager, dyn_data::Dyn_Data, curr
     # specral tracer
     spe_tracers_c_xyzt = output_manager.spe_tracers_c_xyzt
     spe_tracers_p_xyzt = output_manager.spe_tracers_p_xyzt
-    ##########################################################################
+    ############################################################
     # grid w-e velocity
     grid_u_c_xyzt  = output_manager.grid_u_c_xyzt 
     grid_u_p_xyzt  = output_manager.grid_u_p_xyzt 
@@ -256,6 +228,7 @@ function Update_Output!(output_manager::Output_Manager, dyn_data::Dyn_Data, curr
     grid_t_p_xyzt  = output_manager.grid_t_p_xyzt
 
     # grid tracer
+    grid_tracers_n_xyzt = output_manager.grid_tracers_n_xyzt
     grid_tracers_c_xyzt = output_manager.grid_tracers_c_xyzt
     grid_tracers_p_xyzt = output_manager.grid_tracers_p_xyzt
 
@@ -272,6 +245,14 @@ function Update_Output!(output_manager::Output_Manager, dyn_data::Dyn_Data, curr
     
     # geopotential
     grid_geopots_xyzt = output_manager.grid_geopots_xyzt
+    ############################################################
+    grid_vor_xyzt  = output_manager.grid_vor_xyzt
+    grid_div_xyzt  = output_manager.grid_div_xyzt
+
+    # Tendency
+    grid_δu_xyzt   = output_manager.grid_δu_xyzt
+    grid_δv_xyzt   = output_manager.grid_δv_xyzt
+    
 
     i_day = Int(div(current_time - start_time - 1, day_to_sec) + 1)
 
@@ -281,7 +262,7 @@ function Update_Output!(output_manager::Output_Manager, dyn_data::Dyn_Data, curr
     end
     
     ### By CJY
-    #########################################################
+    ############################################################
     # specral vor 
     spe_vor_c_xyzt[:,:,:,i_day] .= dyn_data.spe_vor_c[:,:,:]
     spe_vor_p_xyzt[:,:,:,i_day] .= dyn_data.spe_vor_p[:,:,:]
@@ -301,7 +282,7 @@ function Update_Output!(output_manager::Output_Manager, dyn_data::Dyn_Data, curr
     # specral tracer
     spe_tracers_c_xyzt[:,:,:,i_day] .= dyn_data.spe_tracers_c[:,:,:]
     spe_tracers_p_xyzt[:,:,:,i_day] .= dyn_data.spe_tracers_p[:,:,:]
-    ##########################################################################
+    ############################################################
     # grid w-e velocity
     grid_u_c_xyzt[:,:,:,i_day]  .= dyn_data.grid_u_c[:,:,:] 
     grid_u_p_xyzt[:,:,:,i_day]  .= dyn_data.grid_u_p[:,:,:]
@@ -311,7 +292,7 @@ function Update_Output!(output_manager::Output_Manager, dyn_data::Dyn_Data, curr
     grid_v_p_xyzt[:,:,:,i_day]  .= dyn_data.grid_v_p[:,:,:]
 
     # grid surface pressure
-    grid_ps_c_xyzt[:,:,:,i_day]   .= dyn_data.grid_ps_c[:,:,:]
+    grid_ps_c_xyzt[:,:,:,i_day] .= dyn_data.grid_ps_c[:,:,:]
     grid_ps_p_xyzt[:,:,:,i_day] .= dyn_data.grid_ps_p[:,:,:]
 
     # grid temperature
@@ -319,6 +300,7 @@ function Update_Output!(output_manager::Output_Manager, dyn_data::Dyn_Data, curr
     grid_t_p_xyzt[:,:,:,i_day]  .= dyn_data.grid_t_p[:,:,:]
 
     # grid tracer
+    grid_tracers_n_xyzt[:,:,:,i_day] .= dyn_data.grid_tracers_n[:,:,:]
     grid_tracers_c_xyzt[:,:,:,i_day] .= dyn_data.grid_tracers_c[:,:,:]
     grid_tracers_p_xyzt[:,:,:,i_day] .= dyn_data.grid_tracers_p[:,:,:]
 
@@ -335,6 +317,14 @@ function Update_Output!(output_manager::Output_Manager, dyn_data::Dyn_Data, curr
     
     # geopotential
     grid_geopots_xyzt[:,:,:,i_day] .= dyn_data.grid_geopots[:,:,:]
+    ############################################################
+    grid_vor_xyzt[:,:,:,i_day]  .= dyn_data.grid_vor[:,:,:]
+    grid_div_xyzt[:,:,:,i_day]  .= dyn_data.grid_div[:,:,:]
+
+    # Tendency
+    grid_δu_xyzt[:,:,:,i_day]   .= dyn_data.grid_δu[:,:,:]
+    grid_δv_xyzt[:,:,:,i_day]   .= dyn_data.grid_δv[:,:,:]
+
 
     n_daily_mean[i_day] += 1
 end
@@ -344,7 +334,7 @@ function Finalize_Output!(output_manager::Output_Manager, save_file_name::String
     n_day = output_manager.n_day
 
     ### By CJY
-    #########################################################
+    ############################################################    
     # specral vor 
     spe_vor_c_xyzt  = output_manager.spe_vor_c_xyzt
     spe_vor_p_xyzt  = output_manager.spe_vor_p_xyzt
@@ -364,7 +354,7 @@ function Finalize_Output!(output_manager::Output_Manager, save_file_name::String
     # specral tracer
     spe_tracers_c_xyzt = output_manager.spe_tracers_c_xyzt
     spe_tracers_p_xyzt = output_manager.spe_tracers_p_xyzt
-    ##########################################################################
+    ############################################################
     # grid w-e velocity
     grid_u_c_xyzt  = output_manager.grid_u_c_xyzt 
     grid_u_p_xyzt  = output_manager.grid_u_p_xyzt 
@@ -382,6 +372,7 @@ function Finalize_Output!(output_manager::Output_Manager, save_file_name::String
     grid_t_p_xyzt  = output_manager.grid_t_p_xyzt
 
     # grid tracer
+    grid_tracers_n_xyzt = output_manager.grid_tracers_n_xyzt  
     grid_tracers_c_xyzt = output_manager.grid_tracers_c_xyzt
     grid_tracers_p_xyzt = output_manager.grid_tracers_p_xyzt
 
@@ -398,120 +389,20 @@ function Finalize_Output!(output_manager::Output_Manager, save_file_name::String
     
     # geopotential
     grid_geopots_xyzt = output_manager.grid_geopots_xyzt
-
-       
+    ############################################################
+    grid_vor_xyzt  = output_manager.grid_vor_xyzt    
+    grid_div_xyzt  = output_manager.grid_div_xyzt
+    
+    # Tendency
+    grid_δu_xyzt   = output_manager.grid_δu_xyzt
+    grid_δv_xyzt   = output_manager.grid_δv_xyzt
+    
     if save_file_name != "None"
         @save save_file_name output_manager
-        """
-        grid_u 
-        grid_v 
-        grid_t 
-        grid_geopots 
-        grid_ps 
-        
-        spe_vor_c 
-        spe_div_c 
-        grid_lnps 
-        spe_lnps_c 
-        spe_lnps_p 
-        
-        grid_tracers_c 
-        grid_tracers_p 
-        grid_tracers_diff 
-        grid_w_full 
-        grid_vor_c 
-        
-        grid_δu 
-        grid_δv 
-        grid_δt 
-        grid_δps 
-        
-        grid_z_full 
-        grid_z_half 
-        
-        factor1 
-        factor2 
-        factor3
-        """
     end
 
     if mean_save_file_name != "None"
-        @save mean_save_file_name spe_vor_c_xyzt spe_vor_p_xyzt spe_div_c_xyzt spe_div_p_xyzt spe_tracers_c_xyzt spe_tracers_p_xyzt grid_u_c_xyzt  grid_u_p_xyzt grid_v_c_xyzt grid_v_p_xyzt grid_ps_c_xyzt grid_ps_p_xyzt grid_t_c_xyzt grid_t_p_xyzt grid_tracers_c_xyzt grid_tracers_p_xyzt grid_tracers_diff_xyzt factor1_xyzt factor2_xyzt factor3_xyzt grid_p_full_xyzt grid_p_half_xyzt grid_geopots_xyzt
-        """
-        #########################################################
-        # specral vor 
-        spe_vor_p_xyzt 
-        
-        # specral div
-        spe_div_c_xyzt 
-        spe_div_p_xyzt 
-    
-        # specral height or surface pressure
-        spe_lnps_c_xyzt 
-        spe_lnps_p_xyzt 
-        
-        # specral temperature
-        spe_t_c_xyzt 
-        spe_t_p_xyzt 
-        
-        # specral tracer
-        spe_tracers_c_xyzt 
-        spe_tracers_p_xyzt 
-        ##########################################################################
-        # grid w-e velocity
-        grid_u_c_xyzt  
-        grid_u_p_xyzt   
-        
-        # grid n-s velocity
-        grid_v_c_xyzt  
-        grid_v_p_xyzt  
-    
-        # grid surface pressure
-        grid_ps_c_xyzt  
-        grid_ps_p_xyzt 
-    
-        # grid temperature
-        grid_t_c_xyzt  
-        grid_t_p_xyzt  
-    
-        # grid tracer
-        grid_tracers_c_xyzt 
-        grid_tracers_p_xyzt 
-    
-        grid_tracers_diff_xyzt 
-        ############################################################
-        factor1_xyzt 
-        factor2_xyzt 
-        factor3_xyzt
-        #########################################################
-        # specral vor 
-        # spe_vor_n
-        # spe_vor_c
-        # spe_vor_p
-    
-        # specral div
-        # spe_div_n
-        # spe_div_c
-        # spe_div_p
-    
-        # specral height or surface pressure
-        # spe_lnps_n
-        # spe_lnps_c
-        # spe_lnps_p
-    
-        # specral temperature
-        # spe_t_n
-        # spe_t_c
-        # spe_t_p
-    
-        # specral tracer
-        # spe_tracers_n
-        # spe_tracers_c
-        # spe_tracers_p
-    
-        ##########################################################################
-        """
-
+        @save mean_save_file_name spe_vor_c_xyzt spe_vor_p_xyzt spe_div_c_xyzt spe_div_p_xyzt spe_lnps_c_xyzt spe_lnps_p_xyzt spe_t_c_xyzt spe_t_p_xyzt spe_tracers_c_xyzt spe_tracers_p_xyzt grid_tracers_n_xyzt grid_u_c_xyzt  grid_u_p_xyzt grid_v_c_xyzt grid_v_p_xyzt grid_ps_c_xyzt grid_ps_p_xyzt grid_t_c_xyzt grid_t_p_xyzt grid_tracers_c_xyzt grid_tracers_p_xyzt grid_tracers_diff_xyzt factor1_xyzt factor2_xyzt factor3_xyzt grid_p_full_xyzt grid_p_half_xyzt grid_geopots_xyzt grid_vor_xyzt grid_div_xyzt  grid_δu_xyzt grid_δv_xyzt 
     end
 end
 
