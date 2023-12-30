@@ -620,14 +620,23 @@ function Spectral_Initialize_Fields!(mesh::Spectral_Spherical_Mesh, atmo_data::A
         grid_δu = dyn_data.grid_δu
         grid_δv = dyn_data.grid_δv
 
-        grid_δvor = dyn_data.grid_δvor
-        grid_δdiv = dyn_data.grid_δdiv
+        # grid_δvor = dyn_data.grid_δvor
+        # grid_δdiv = dyn_data.grid_δdiv
 
         grid_δtracers = dyn_data.grid_δtracers
-        grid_t_eq     = dyn_data.grid_t_eq
+        # grid_t_eq     = dyn_data.grid_t_eq
+        # spe_δvor      = dyn_data.spe_δvor
+        # spe_δdiv      = dyn_data.spe_δdiv
+        # grid_dλ_ps    = dyn_data.grid_dλ_ps
+        # grid_dθ_ps    = dyn_data.grid_dθ_ps
+
+        grid_u_n      = dyn_data.grid_u_n
+        grid_v_n      = dyn_data.grid_v_n
+        
         ########################################################
         read_file     = load(warm_start_file_name)        
         grid_t       .= read_file["grid_t_c_xyzt"][:,:,:,initial_day] 
+        
         grid_lnps    .= log.(read_file["grid_ps_c_xyzt"][:,:,1,initial_day])
         grid_ps      .= read_file["grid_ps_c_xyzt"][:,:,1,initial_day]
         
@@ -678,13 +687,22 @@ function Spectral_Initialize_Fields!(mesh::Spectral_Spherical_Mesh, atmo_data::A
         # grid_δvor .= read_file["grid_δvor_xyzt"][:,:,:,initial_day]
         # grid_δdiv .= read_file["grid_δdiv_xyzt"][:,:,:,initial_day]
 
-        grid_t_n    .= read_file["grid_t_n_xyzt"][:,:,:,initial_day] # grid_diff would destroy
         
+        # grid_t_eq     .= read_file["grid_t_eq_xyzt"][:,:,:,initial_day]
+
+        # spe_δvor .= read_file["spe_δvor_xyzt"][:,:,:,initial_day]
+        # spe_δdiv .= read_file["spe_δdiv_xyzt"][:,:,:,initial_day]
+
+        # grid_dλ_ps .= read_file["grid_dλ_ps_xyzt"][:,:,1,initial_day]
+        # grid_dθ_ps .= read_file["grid_dθ_ps_xyzt"][:,:,1,initial_day]
+        ####################################################################
+        # Correction_Init! would use these!!!
+        grid_t_n    .= read_file["grid_t_n_xyzt"][:,:,:,initial_day] 
+        grid_u_n   .= read_file["grid_u_n_xyzt"][:,:,:,initial_day]
+        grid_v_n   .= read_file["grid_v_n_xyzt"][:,:,:,initial_day]
         grid_δtracers .= read_file["grid_δtracers_xyzt"][:,:,:,initial_day]
-        grid_t_eq     .= read_file["grid_t_eq_xyzt"][:,:,:,initial_day]
         
-        
-        
+                
         
 
         
