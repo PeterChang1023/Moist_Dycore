@@ -41,7 +41,12 @@ function Atmos_Spectral_Dynamics_Main(physcis_params::Dict{String, Float64}, end
     start_time = 0
     end_time = end_day*day_to_sec  
     Δt = 600
-    init_step = true
+    ### CJY
+    if warm_start_file_name != "None"
+        init_step = false # => In leapfrog would NOT do damping at initital time (should use in warm start case)
+    else
+        init_step = true # => In leapfrog would do damping at initital time
+    end
     
     integrator = Filtered_Leapfrog(robert_coef, 
     damping_order, damping_coef, mesh.laplacian_eig,
