@@ -43,10 +43,12 @@ mutable struct Output_Manager
     spe_tracers_p_xyzt::Array{ComplexF64,4}
     ##########################################################################
     # grid w-e velocity
+    grid_u_n_xyzt::Array{Float64, 4}
     grid_u_c_xyzt::Array{Float64, 4}
     grid_u_p_xyzt::Array{Float64, 4}
     
     # grid n-s velocity
+    grid_v_n_xyzt::Array{Float64, 4}
     grid_v_c_xyzt::Array{Float64, 4}
     grid_v_p_xyzt::Array{Float64, 4}
 
@@ -84,10 +86,14 @@ mutable struct Output_Manager
     # vor
     spe_δvor_xyzt::Array{ComplexF64,4}
     grid_vor_xyzt::Array{Float64,4}
+    grid_δvor_xyzt::Array{Float64,4}
+    
 
     # div
     spe_δdiv_xyzt::Array{ComplexF64,4}
     grid_div_xyzt::Array{Float64,4}
+    grid_δdiv_xyzt::Array{Float64,4}
+    
 
     # w-e velocity tendency
     grid_δu_xyzt::Array{Float64,4}
@@ -97,6 +103,10 @@ mutable struct Output_Manager
     #######################################################################
     # equilibrium temperature in HS_Forcing
     grid_t_eq_xyzt::Array{Float64,4}
+    
+    grid_dλ_ps_xyzt::Array{Float64,4}
+    grid_dθ_ps_xyzt::Array{Float64,4}
+
     
 
 end
@@ -144,10 +154,12 @@ function Output_Manager(mesh::Spectral_Spherical_Mesh, vert_coord::Vert_Coordina
     spe_tracers_p_xyzt = zeros(ComplexF64, num_fourier+1, num_spherical+1, nd, n_day)
     ##########################################################
     # grid w-e velocity
+    grid_u_n_xyzt  = zeros(Float64, nλ, nθ, nd, n_day)
     grid_u_c_xyzt  = zeros(Float64, nλ, nθ, nd, n_day)
     grid_u_p_xyzt  = zeros(Float64, nλ, nθ, nd, n_day)
 
     # grid n-s velocity
+    grid_v_n_xyzt  = zeros(Float64, nλ, nθ, nd, n_day)
     grid_v_c_xyzt  = zeros(Float64, nλ, nθ, nd, n_day)
     grid_v_p_xyzt  = zeros(Float64, nλ, nθ, nd, n_day)
 
@@ -182,22 +194,28 @@ function Output_Manager(mesh::Spectral_Spherical_Mesh, vert_coord::Vert_Coordina
     ################################################
     spe_δvor_xyzt  = zeros(ComplexF64, num_fourier+1, num_spherical+1, nd, n_day)
     grid_vor_xyzt  = zeros(Float64, nλ,  nθ, nd, n_day)
+    grid_δvor_xyzt = zeros(Float64, nλ,  nθ, nd, n_day)
+    
     
     spe_δdiv_xyzt  = zeros(ComplexF64, num_fourier+1, num_spherical+1, nd, n_day)
     grid_div_xyzt  = zeros(Float64, nλ,  nθ, nd, n_day) 
+    grid_δdiv_xyzt = zeros(Float64, nλ,  nθ, nd, n_day)
+    
     
     # Tendency
     grid_δu_xyzt  = zeros(Float64, nλ,  nθ, nd, n_day) 
     grid_δv_xyzt  = zeros(Float64, nλ,  nθ, nd, n_day) 
 
     grid_t_eq_xyzt = zeros(Float64, nλ,  nθ, nd, n_day) 
-    
-        
-    
 
+    grid_dλ_ps_xyzt = zeros(Float64, nλ,  nθ, nd, n_day) 
+    grid_dθ_ps_xyzt = zeros(Float64, nλ,  nθ, nd, n_day) 
+    
+    
+    
     Output_Manager(nλ, nθ, nd, n_day,
     day_to_sec, start_time, end_time, current_time, spinup_day,
-    λc, θc, σc, n_daily_mean, spe_vor_c_xyzt, spe_vor_p_xyzt, spe_div_c_xyzt, spe_div_p_xyzt, spe_lnps_c_xyzt, spe_lnps_p_xyzt, spe_t_c_xyzt, spe_t_p_xyzt, spe_tracers_c_xyzt, spe_tracers_p_xyzt, grid_u_c_xyzt, grid_u_p_xyzt, grid_v_c_xyzt, grid_v_p_xyzt, grid_ps_c_xyzt, grid_ps_p_xyzt, grid_t_n_xyzt, grid_t_c_xyzt, grid_t_p_xyzt, grid_tracers_n_xyzt, grid_tracers_c_xyzt, grid_tracers_p_xyzt, grid_tracers_diff_xyzt, grid_δtracers_xyzt, factor1_xyzt, factor2_xyzt, factor3_xyzt, grid_p_full_xyzt, grid_p_half_xyzt, grid_geopots_xyzt, spe_δvor_xyzt, grid_vor_xyzt, spe_δdiv_xyzt, grid_div_xyzt, grid_δu_xyzt, grid_δv_xyzt, grid_t_eq_xyzt)
+    λc, θc, σc, n_daily_mean, spe_vor_c_xyzt, spe_vor_p_xyzt, spe_div_c_xyzt, spe_div_p_xyzt, spe_lnps_c_xyzt, spe_lnps_p_xyzt, spe_t_c_xyzt, spe_t_p_xyzt, spe_tracers_c_xyzt, spe_tracers_p_xyzt, grid_u_n_xyzt, grid_u_c_xyzt, grid_u_p_xyzt, grid_v_n_xyzt, grid_v_c_xyzt, grid_v_p_xyzt, grid_ps_c_xyzt, grid_ps_p_xyzt, grid_t_n_xyzt, grid_t_c_xyzt, grid_t_p_xyzt, grid_tracers_n_xyzt, grid_tracers_c_xyzt, grid_tracers_p_xyzt, grid_tracers_diff_xyzt, grid_δtracers_xyzt, factor1_xyzt, factor2_xyzt, factor3_xyzt, grid_p_full_xyzt, grid_p_half_xyzt, grid_geopots_xyzt, spe_δvor_xyzt, grid_vor_xyzt, grid_δvor_xyzt, spe_δdiv_xyzt, grid_div_xyzt, grid_δdiv_xyzt, grid_δu_xyzt, grid_δv_xyzt, grid_t_eq_xyzt, grid_dλ_ps_xyzt, grid_dθ_ps_xyzt)
 end
 
 function Update_Output!(output_manager::Output_Manager, dyn_data::Dyn_Data, current_time::Int64)
@@ -229,10 +247,12 @@ function Update_Output!(output_manager::Output_Manager, dyn_data::Dyn_Data, curr
     spe_tracers_p_xyzt = output_manager.spe_tracers_p_xyzt
     ############################################################
     # grid w-e velocity
+    grid_u_n_xyzt  = output_manager.grid_u_n_xyzt 
     grid_u_c_xyzt  = output_manager.grid_u_c_xyzt 
     grid_u_p_xyzt  = output_manager.grid_u_p_xyzt 
     
     # grid n-s velocity
+    grid_v_n_xyzt  = output_manager.grid_v_n_xyzt
     grid_v_c_xyzt  = output_manager.grid_v_c_xyzt
     grid_v_p_xyzt  = output_manager.grid_v_p_xyzt
 
@@ -267,15 +287,23 @@ function Update_Output!(output_manager::Output_Manager, dyn_data::Dyn_Data, curr
     ############################################################
     spe_δvor_xyzt  = output_manager.spe_δvor_xyzt
     grid_vor_xyzt  = output_manager.grid_vor_xyzt
+    grid_δvor_xyzt = output_manager.grid_δvor_xyzt
+    
     
     spe_δdiv_xyzt  = output_manager.spe_δdiv_xyzt
     grid_div_xyzt  = output_manager.grid_div_xyzt
+    grid_δdiv_xyzt = output_manager.grid_δdiv_xyzt
+    
 
     # Tendency
     grid_δu_xyzt   = output_manager.grid_δu_xyzt
     grid_δv_xyzt   = output_manager.grid_δv_xyzt
 
     grid_t_eq_xyzt = output_manager.grid_t_eq_xyzt
+
+    grid_dλ_ps_xyzt = output_manager.grid_dλ_ps_xyzt
+    grid_dθ_ps_xyzt = output_manager.grid_dθ_ps_xyzt
+    
     
 
     i_day = Int(div(current_time - start_time - 1, day_to_sec) + 1)
@@ -308,10 +336,12 @@ function Update_Output!(output_manager::Output_Manager, dyn_data::Dyn_Data, curr
     spe_tracers_p_xyzt[:,:,:,i_day] .= dyn_data.spe_tracers_p[:,:,:]
     ############################################################
     # grid w-e velocity
+    grid_u_n_xyzt[:,:,:,i_day]  .= dyn_data.grid_u_n[:,:,:] 
     grid_u_c_xyzt[:,:,:,i_day]  .= dyn_data.grid_u_c[:,:,:] 
     grid_u_p_xyzt[:,:,:,i_day]  .= dyn_data.grid_u_p[:,:,:]
     
     # grid n-s velocity
+    grid_v_n_xyzt[:,:,:,i_day]  .= dyn_data.grid_v_n[:,:,:]
     grid_v_c_xyzt[:,:,:,i_day]  .= dyn_data.grid_v_c[:,:,:]
     grid_v_p_xyzt[:,:,:,i_day]  .= dyn_data.grid_v_p[:,:,:]
 
@@ -346,15 +376,24 @@ function Update_Output!(output_manager::Output_Manager, dyn_data::Dyn_Data, curr
     ############################################################
     spe_δvor_xyzt[:,:,:,i_day]  .= dyn_data.spe_δvor[:,:,:]
     grid_vor_xyzt[:,:,:,i_day]  .= dyn_data.grid_vor[:,:,:]
+    grid_δvor_xyzt[:,:,:,i_day] .= dyn_data.grid_δvor[:,:,:]
+    
     
     spe_δdiv_xyzt[:,:,:,i_day]  .= dyn_data.spe_δdiv[:,:,:]
     grid_div_xyzt[:,:,:,i_day]  .= dyn_data.grid_div[:,:,:]
+    grid_δdiv_xyzt[:,:,:,i_day] .= dyn_data.grid_δvor[:,:,:]
+    
 
     # Tendency
     grid_δu_xyzt[:,:,:,i_day]   .= dyn_data.grid_δu[:,:,:]
     grid_δv_xyzt[:,:,:,i_day]   .= dyn_data.grid_δv[:,:,:]
 
     grid_t_eq_xyzt[:,:,:,i_day] .= dyn_data.grid_t_eq[:,:,:]
+
+    grid_dλ_ps_xyzt[:,:,:,i_day] .= dyn_data.grid_dλ_ps[:,:,:]
+    grid_dθ_ps_xyzt[:,:,:,i_day] .= dyn_data.grid_dθ_ps[:,:,:]
+    
+    
 
 
     n_daily_mean[i_day] += 1
@@ -387,10 +426,12 @@ function Finalize_Output!(output_manager::Output_Manager, save_file_name::String
     spe_tracers_p_xyzt = output_manager.spe_tracers_p_xyzt
     ############################################################
     # grid w-e velocity
+    grid_u_n_xyzt  = output_manager.grid_u_n_xyzt 
     grid_u_c_xyzt  = output_manager.grid_u_c_xyzt 
     grid_u_p_xyzt  = output_manager.grid_u_p_xyzt 
     
     # grid n-s velocity
+    grid_v_n_xyzt  = output_manager.grid_v_n_xyzt
     grid_v_c_xyzt  = output_manager.grid_v_c_xyzt
     grid_v_p_xyzt  = output_manager.grid_v_p_xyzt
 
@@ -425,14 +466,23 @@ function Finalize_Output!(output_manager::Output_Manager, save_file_name::String
     ############################################################
     spe_δvor_xyzt  = output_manager.spe_δvor_xyzt
     grid_vor_xyzt  = output_manager.grid_vor_xyzt    
+    grid_δvor_xyzt = output_manager.grid_δvor_xyzt
+
     spe_δdiv_xyzt  = output_manager.spe_δdiv_xyzt
     grid_div_xyzt  = output_manager.grid_div_xyzt
+    grid_δdiv_xyzt = output_manager.grid_δdiv_xyzt
+    
     
     # Tendency
     grid_δu_xyzt   = output_manager.grid_δu_xyzt
     grid_δv_xyzt   = output_manager.grid_δv_xyzt
 
     grid_t_eq_xyzt = output_manager.grid_t_eq_xyzt
+
+    grid_dλ_ps_xyzt = output_manager.grid_dλ_ps_xyzt
+    grid_dθ_ps_xyzt = output_manager.grid_dθ_ps_xyzt
+    
+    
     
     
     if save_file_name != "None"
@@ -440,7 +490,7 @@ function Finalize_Output!(output_manager::Output_Manager, save_file_name::String
     end
 
     if mean_save_file_name != "None"
-        @save mean_save_file_name spe_vor_c_xyzt spe_vor_p_xyzt spe_div_c_xyzt spe_div_p_xyzt spe_lnps_c_xyzt spe_lnps_p_xyzt spe_t_c_xyzt spe_t_p_xyzt spe_tracers_c_xyzt spe_tracers_p_xyzt grid_tracers_n_xyzt grid_u_c_xyzt  grid_u_p_xyzt grid_v_c_xyzt grid_v_p_xyzt grid_ps_c_xyzt grid_ps_p_xyzt grid_t_n_xyzt grid_t_c_xyzt grid_t_p_xyzt grid_tracers_c_xyzt grid_tracers_p_xyzt grid_tracers_diff_xyzt grid_δtracers_xyzt factor1_xyzt factor2_xyzt factor3_xyzt grid_p_full_xyzt grid_p_half_xyzt grid_geopots_xyzt spe_δvor_xyzt grid_vor_xyzt spe_δdiv_xyzt grid_div_xyzt  grid_δu_xyzt grid_δv_xyzt grid_t_eq_xyzt
+        @save mean_save_file_name spe_vor_c_xyzt spe_vor_p_xyzt spe_div_c_xyzt spe_div_p_xyzt spe_lnps_c_xyzt spe_lnps_p_xyzt spe_t_c_xyzt spe_t_p_xyzt spe_tracers_c_xyzt spe_tracers_p_xyzt grid_tracers_n_xyzt grid_u_n_xyzt grid_u_c_xyzt  grid_u_p_xyzt grid_v_n_xyzt grid_v_c_xyzt grid_v_p_xyzt grid_ps_c_xyzt grid_ps_p_xyzt grid_t_n_xyzt grid_t_c_xyzt grid_t_p_xyzt grid_tracers_c_xyzt grid_tracers_p_xyzt grid_tracers_diff_xyzt grid_δtracers_xyzt factor1_xyzt factor2_xyzt factor3_xyzt grid_p_full_xyzt grid_p_half_xyzt grid_geopots_xyzt spe_δvor_xyzt grid_vor_xyzt grid_δvor_xyzt spe_δdiv_xyzt grid_div_xyzt grid_δdiv_xyzt grid_δu_xyzt grid_δv_xyzt grid_t_eq_xyzt grid_dλ_ps_xyzt grid_dθ_ps_xyzt
     end
 end
 

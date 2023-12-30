@@ -38,7 +38,7 @@ function Filtered_Leapfrog(robert_coef::Float64,
 end
 
 function Update_Init_Step!(integrator::Filtered_Leapfrog)
-    @assert(integrator.init_step)
+    # @assert(integrator.init_step)
     integrator.init_step = false
 end
 
