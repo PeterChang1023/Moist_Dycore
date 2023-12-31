@@ -615,51 +615,43 @@ function Spectral_Initialize_Fields!(mesh::Spectral_Spherical_Mesh, atmo_data::A
         grid_tracers_n    = dyn_data.grid_tracers_n
         grid_tracers_c    = dyn_data.grid_tracers_c
         grid_tracers_p    = dyn_data.grid_tracers_p 
+
+        grid_u_n      = dyn_data.grid_u_n
+        grid_v_n      = dyn_data.grid_v_n
         ########################################################
         # Tendency 
         grid_δu = dyn_data.grid_δu
         grid_δv = dyn_data.grid_δv
 
-        # grid_δvor = dyn_data.grid_δvor
-        # grid_δdiv = dyn_data.grid_δdiv
-
         grid_δtracers = dyn_data.grid_δtracers
-        # grid_t_eq     = dyn_data.grid_t_eq
-        # spe_δvor      = dyn_data.spe_δvor
-        # spe_δdiv      = dyn_data.spe_δdiv
-        # grid_dλ_ps    = dyn_data.grid_dλ_ps
-        # grid_dθ_ps    = dyn_data.grid_dθ_ps
-
-        grid_u_n      = dyn_data.grid_u_n
-        grid_v_n      = dyn_data.grid_v_n
-        
         ########################################################
         read_file     = load(warm_start_file_name)        
+        grid_u[:,:,:]    .= read_file["grid_u_c_xyzt"][:,:,:,initial_day]
+        grid_v[:,:,:]    .= read_file["grid_v_c_xyzt"][:,:,:,initial_day]  
         grid_t       .= read_file["grid_t_c_xyzt"][:,:,:,initial_day] 
         
         grid_lnps    .= log.(read_file["grid_ps_c_xyzt"][:,:,1,initial_day])
         grid_ps      .= read_file["grid_ps_c_xyzt"][:,:,1,initial_day]
-        
+
+        # grid_ps -> grid_p_half, grid_Δp, grid_lnp_half, grid_p_full, grid_lnp_full
+        Pressure_Variables!(vert_coord, grid_ps, grid_p_half, grid_Δp,
+        grid_lnp_half, grid_p_full, grid_lnp_full)
+        ########################################################
         # By CJY
         num_fourier, num_spherical = mesh.num_fourier, mesh.num_spherical
+
+        spe_t_c       .= read_file["spe_t_c_xyzt"][:,:,:,initial_day] 
+        
         
         spe_vor_c[:,:,:] .= read_file["spe_vor_c_xyzt"][:,:,:,initial_day]
         spe_div_c[:,:,:] .= read_file["spe_div_c_xyzt"][:,:,:,initial_day]
-        grid_u[:,:,:]    .= read_file["grid_u_c_xyzt"][:,:,:,initial_day]
-        grid_v[:,:,:]    .= read_file["grid_v_c_xyzt"][:,:,:,initial_day]  
-
         
-        spe_t_c       .= read_file["spe_t_c_xyzt"][:,:,:,initial_day] 
         spe_lnps_c    .= (read_file["spe_lnps_c_xyzt"][:,:,1,initial_day])
         
 
-        grid_vor .= read_file["grid_vor_xyzt"][:,:,:,initial_day]
-        grid_div .= read_file["grid_div_xyzt"][:,:,:,initial_day]
-        
-        Pressure_Variables!(vert_coord, grid_ps, grid_p_half, grid_Δp,
-        grid_lnp_half, grid_p_full, grid_lnp_full)
-        
-
+        grid_vor .= read_file["grid_vor_xyzt"][:,:,:,initial_day] # Compute_Abs_Vor! need it 
+        grid_div .= read_file["grid_div_xyzt"][:,:,:,initial_day] # Four_in_one! need it
+        ########################################################
         spe_vor_p   .= read_file["spe_vor_p_xyzt"][:,:,:,initial_day]
         spe_div_p   .= read_file["spe_div_p_xyzt"][:,:,:,initial_day]
         spe_lnps_p  .= read_file["spe_lnps_p_xyzt"][:,:,:,initial_day]
@@ -669,10 +661,9 @@ function Spectral_Initialize_Fields!(mesh::Spectral_Spherical_Mesh, atmo_data::A
         grid_v_p    .= read_file["grid_v_p_xyzt"][:,:,:,initial_day]
         grid_ps_p   .= read_file["grid_ps_p_xyzt"][:,:,:,initial_day]
         grid_t_p    .= read_file["grid_t_p_xyzt"][:,:,:,initial_day]
-        
+        ########################################################
         # Tracer initialization
-        # large precipitation need next DO NOT REMOVE IT !!!
-        grid_tracers_n .= read_file["grid_tracers_n_xyzt"][:,:,:,initial_day] 
+        grid_tracers_n .= read_file["grid_tracers_n_xyzt"][:,:,:,initial_day] # large precipitation need next DO NOT REMOVE IT !!!
         grid_tracers_c .= read_file["grid_tracers_c_xyzt"][:,:,:,initial_day]
         grid_tracers_p .= read_file["grid_tracers_p_xyzt"][:,:,:,initial_day]
         
@@ -681,32 +672,16 @@ function Spectral_Initialize_Fields!(mesh::Spectral_Spherical_Mesh, atmo_data::A
         spe_tracers_c  .= read_file["spe_tracers_c_xyzt"][:,:,:,initial_day]
         spe_tracers_p  .= read_file["spe_tracers_p_xyzt"][:,:,:,initial_day]
 
-        grid_δu .= read_file["grid_δu_xyzt"][:,:,:,initial_day]
-        grid_δv .= read_file["grid_δv_xyzt"][:,:,:,initial_day]
+        # grid_δu .= read_file["grid_δu_xyzt"][:,:,:,initial_day] # Rayleigh_Damping! has given it value 
+        # grid_δv .= read_file["grid_δv_xyzt"][:,:,:,initial_day] # Rayleigh_Damping! has given it value
 
-        # grid_δvor .= read_file["grid_δvor_xyzt"][:,:,:,initial_day]
-        # grid_δdiv .= read_file["grid_δdiv_xyzt"][:,:,:,initial_day]
-
-        
-        # grid_t_eq     .= read_file["grid_t_eq_xyzt"][:,:,:,initial_day]
-
-        # spe_δvor .= read_file["spe_δvor_xyzt"][:,:,:,initial_day]
-        # spe_δdiv .= read_file["spe_δdiv_xyzt"][:,:,:,initial_day]
-
-        # grid_dλ_ps .= read_file["grid_dλ_ps_xyzt"][:,:,1,initial_day]
-        # grid_dθ_ps .= read_file["grid_dθ_ps_xyzt"][:,:,1,initial_day]
         ####################################################################
         # Correction_Init! would use these!!!
-        grid_t_n    .= read_file["grid_t_n_xyzt"][:,:,:,initial_day] 
-        grid_u_n   .= read_file["grid_u_n_xyzt"][:,:,:,initial_day]
-        grid_v_n   .= read_file["grid_v_n_xyzt"][:,:,:,initial_day]
-        grid_δtracers .= read_file["grid_δtracers_xyzt"][:,:,:,initial_day]
-        
-                
-        
+        # grid_t_n    .= read_file["grid_t_n_xyzt"][:,:,:,initial_day] 
+        # grid_u_n   .= read_file["grid_u_n_xyzt"][:,:,:,initial_day]
+        # grid_v_n   .= read_file["grid_v_n_xyzt"][:,:,:,initial_day]
+        # grid_δtracers .= read_file["grid_δtracers_xyzt"][:,:,:,initial_day]
 
-        
-        
     end
 
     if warm_start_file_name == "None" # then use original start
