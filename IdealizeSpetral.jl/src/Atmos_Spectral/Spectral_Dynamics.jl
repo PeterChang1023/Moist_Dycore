@@ -860,7 +860,7 @@ function HS_forcing_water_vapor!(semi_implicit::Semi_Implicit_Solver, grid_trace
 
     # latent heat feedback to temperature tendency 
     day_to_sec        = 86400.
-    L                 = 0.15
+    L                 = 0.1
     factor3          .= grid_tracers_diff
     diabatic_heating  = deepcopy(grid_tracers_diff)
     diabatic_heating .= (grid_tracers_diff .* Lv ./ cp) ./day_to_sec .* L 
