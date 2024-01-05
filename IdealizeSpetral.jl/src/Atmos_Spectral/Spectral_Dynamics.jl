@@ -83,7 +83,7 @@ function Compute_Corrections!(semi_implicit::Semi_Implicit_Solver, vert_coord::V
         grid_tracers_n                      .*=  mean_moisture_p ./ mean_moisture_n 
         mean_moisture_n                       =  Mass_Weighted_Global_Integral(vert_coord, mesh, atmo_data, grid_tracers_n, grid_ps_n)        
         ### 10/30 
-        @info "#### moisture correction:", (mean_moisture_n - mean_moisture_p)
+        # @info "#### moisture correction:", (mean_moisture_n - mean_moisture_p)
         return mean_moisture_n
     end
     
@@ -220,7 +220,7 @@ We have
 
 function Spectral_Dynamics!(mesh::Spectral_Spherical_Mesh,  vert_coord::Vert_Coordinate, 
     atmo_data::Atmo_Data, dyn_data::Dyn_Data, 
-    semi_implicit::Semi_Implicit_Solver)
+    semi_implicit::Semi_Implicit_Solver, L::Float64 = 0.05)
     
     # spectral equation quantities
     spe_lnps_p, spe_lnps_c, spe_lnps_n, spe_δlnps = dyn_data.spe_lnps_p, dyn_data.spe_lnps_c, dyn_data.spe_lnps_n, dyn_data.spe_δlnps
@@ -314,7 +314,7 @@ function Spectral_Dynamics!(mesh::Spectral_Spherical_Mesh,  vert_coord::Vert_Coo
     ## large-scale precipitation
     """
     grid_δu, grid_δv, grid_δps, grid_δlnps, grid_δt = dyn_data.grid_δu, dyn_data.grid_δv, dyn_data.grid_δps, dyn_data.grid_δlnps, dyn_data.grid_δt
-    grid_tracers_diff_new                           = HS_forcing_water_vapor!(semi_implicit, grid_tracers_n,  grid_t_n, grid_δt, grid_p_full, grid_u, grid_v, factor3, grid_δtracers, grid_tracers_c, grid_t)
+    grid_tracers_diff_new                           = HS_forcing_water_vapor!(semi_implicit, grid_tracers_n,  grid_t_n, grid_δt, grid_p_full, grid_u, grid_v, factor3, grid_δtracers, grid_tracers_c, grid_t, L)
     grid_tracers_diff                              .= grid_tracers_diff_new
     grid_tracers_c[grid_tracers_c .< 0]            .= 0     
    
@@ -343,7 +343,7 @@ function Spectral_Dynamics!(mesh::Spectral_Spherical_Mesh,  vert_coord::Vert_Coo
     za[:,:,1] .= Rd .* tv[:,:,1] ./grav .* (log.(grid_ps[:,:,1] ./ ((grid_p_full[:,:,20] .+ grid_p_half[:,:,21]) ./ 2.) )) ./2
     # za[:,:,1] .= Rd .* tv[:,:,1] ./9.81 .* (log.(grid_ps[:,:,1] ./ ((grid_p_full[:,:,20] .+ grid_p_full[:,:,19]) ./ 2.))) ./2
     
-    @info "#### za global minimum, maximum:" minimum(za), maximum(za)
+    # @info "#### za global minimum, maximum:" minimum(za), maximum(za)
     ###     
     surface_evaporation         = deepcopy(grid_δtracers).*0
 
@@ -360,17 +360,17 @@ function Spectral_Dynamics!(mesh::Spectral_Spherical_Mesh,  vert_coord::Vert_Coo
    """
    # Sensible heat fluxes
    """
-   θc = mesh.θc
-   # Tsurf = zeros((128,64))
-   # Tsurf = deepcopy(grid_t[:,:,20]) .*0
-   # for i in 1:64
-   #   Tsurf[:,i] .= 29. .* exp.(-(θc[i] .^2. ./ (2 * (26. * pi / 180.)^2.))) .+ 271.
-   # end
+#    θc = mesh.θc
+#    # Tsurf = zeros((128,64))
+#    # Tsurf = deepcopy(grid_t[:,:,20]) .*0
+#    # for i in 1:64
+#    #   Tsurf[:,i] .= 29. .* exp.(-(θc[i] .^2. ./ (2 * (26. * pi / 180.)^2.))) .+ 271.
+#    # end
 
-   grid_δt[:,:,20] .+= (((grid_t[:,:,20] .+ C_E .* V_c[:,:,20] .* grid_t[:,:,20] .* Δt ./ za[:,:,1])
-                         ./ (1. .+ C_E .* V_c[:,:,20] .* Δt ./ za[:,:,1]) .- grid_t[:,:,20]) ./ Δt)
-   grid_t_n[:,:,20]  .= ((grid_t[:,:,20] .+ C_E .* V_c[:,:,20] .* grid_t[:,:,20] .* Δt ./ za[:,:,1]) 
-                         ./ (1. .+ C_E .* V_c[:,:,20] .* Δt ./ za[:,:,1]))
+#    grid_δt[:,:,20] .+= (((grid_t[:,:,20] .+ C_E .* V_c[:,:,20] .* grid_t[:,:,20] .* Δt ./ za[:,:,1])
+#                          ./ (1. .+ C_E .* V_c[:,:,20] .* Δt ./ za[:,:,1]) .- grid_t[:,:,20]) ./ Δt)
+#    grid_t_n[:,:,20]  .= ((grid_t[:,:,20] .+ C_E .* V_c[:,:,20] .* grid_t[:,:,20] .* Δt ./ za[:,:,1]) 
+#                          ./ (1. .+ C_E .* V_c[:,:,20] .* Δt ./ za[:,:,1]))
 
 
 
@@ -587,7 +587,7 @@ function Get_Topography!(grid_geopots::Array{Float64, 3}, warm_start_file_name::
     # grid_geopots .= read_file["grid_geopots_xyzt"][:,:,1,300]
     if warm_start_file_name != "None" # load warm start file
         read_file     = load(warm_start_file_name)
-        grid_geopots .= read_file["grid_geopots_xyzt"][:,:,:,initial_day]
+        grid_geopots .= read_file["grid_geopots_final"][:,:,:,1]
     end
     
     return
@@ -626,12 +626,12 @@ function Spectral_Initialize_Fields!(mesh::Spectral_Spherical_Mesh, atmo_data::A
         grid_δtracers = dyn_data.grid_δtracers
         ########################################################
         read_file     = load(warm_start_file_name)        
-        grid_u[:,:,:]    .= read_file["grid_u_c_xyzt"][:,:,:,initial_day]
-        grid_v[:,:,:]    .= read_file["grid_v_c_xyzt"][:,:,:,initial_day]  
-        grid_t       .= read_file["grid_t_c_xyzt"][:,:,:,initial_day] 
+        grid_u[:,:,:]    .= read_file["grid_u_c_final"][:,:,:,1]
+        grid_v[:,:,:]    .= read_file["grid_v_c_final"][:,:,:,1]  
+        grid_t       .= read_file["grid_t_c_final"][:,:,:,1] 
         
-        grid_lnps    .= log.(read_file["grid_ps_c_xyzt"][:,:,1,initial_day])
-        grid_ps      .= read_file["grid_ps_c_xyzt"][:,:,1,initial_day]
+        grid_lnps    .= log.(read_file["grid_ps_c_final"][:,:,1,1])
+        grid_ps      .= read_file["grid_ps_c_final"][:,:,1,1]
 
         # grid_ps -> grid_p_half, grid_Δp, grid_lnp_half, grid_p_full, grid_lnp_full
         Pressure_Variables!(vert_coord, grid_ps, grid_p_half, grid_Δp,
@@ -640,37 +640,37 @@ function Spectral_Initialize_Fields!(mesh::Spectral_Spherical_Mesh, atmo_data::A
         # By CJY
         num_fourier, num_spherical = mesh.num_fourier, mesh.num_spherical
 
-        spe_t_c       .= read_file["spe_t_c_xyzt"][:,:,:,initial_day] 
+        spe_t_c       .= read_file["spe_t_c_final"][:,:,:,1] 
         
         
-        spe_vor_c[:,:,:] .= read_file["spe_vor_c_xyzt"][:,:,:,initial_day]
-        spe_div_c[:,:,:] .= read_file["spe_div_c_xyzt"][:,:,:,initial_day]
+        spe_vor_c[:,:,:] .= read_file["spe_vor_c_final"][:,:,:,1]
+        spe_div_c[:,:,:] .= read_file["spe_div_c_final"][:,:,:,1]
         
-        spe_lnps_c    .= (read_file["spe_lnps_c_xyzt"][:,:,1,initial_day])
+        spe_lnps_c    .= (read_file["spe_lnps_c_final"][:,:,1,1])
         
 
-        grid_vor .= read_file["grid_vor_xyzt"][:,:,:,initial_day] # Compute_Abs_Vor! need it 
-        grid_div .= read_file["grid_div_xyzt"][:,:,:,initial_day] # Four_in_one! need it
+        grid_vor .= read_file["grid_vor_final"][:,:,:,1] # Compute_Abs_Vor! need it 
+        grid_div .= read_file["grid_div_final"][:,:,:,1] # Four_in_one! need it
         ########################################################
-        spe_vor_p   .= read_file["spe_vor_p_xyzt"][:,:,:,initial_day]
-        spe_div_p   .= read_file["spe_div_p_xyzt"][:,:,:,initial_day]
-        spe_lnps_p  .= read_file["spe_lnps_p_xyzt"][:,:,:,initial_day]
-        spe_t_p     .= read_file["spe_t_p_xyzt"][:,:,:,initial_day]
+        spe_vor_p   .= read_file["spe_vor_p_final"][:,:,:,1]
+        spe_div_p   .= read_file["spe_div_p_final"][:,:,:,1]
+        spe_lnps_p  .= read_file["spe_lnps_p_final"][:,:,:,1]
+        spe_t_p     .= read_file["spe_t_p_final"][:,:,:,1]
 
-        grid_u_p    .= read_file["grid_u_p_xyzt"][:,:,:,initial_day]
-        grid_v_p    .= read_file["grid_v_p_xyzt"][:,:,:,initial_day]
-        grid_ps_p   .= read_file["grid_ps_p_xyzt"][:,:,:,initial_day]
-        grid_t_p    .= read_file["grid_t_p_xyzt"][:,:,:,initial_day]
+        grid_u_p    .= read_file["grid_u_p_final"][:,:,:,1]
+        grid_v_p    .= read_file["grid_v_p_final"][:,:,:,1]
+        grid_ps_p   .= read_file["grid_ps_p_final"][:,:,:,1]
+        grid_t_p    .= read_file["grid_t_p_final"][:,:,:,1]
         ########################################################
         # Tracer initialization
-        grid_tracers_n .= read_file["grid_tracers_n_xyzt"][:,:,:,initial_day] # large precipitation need next DO NOT REMOVE IT !!!
-        grid_tracers_c .= read_file["grid_tracers_c_xyzt"][:,:,:,initial_day]
-        grid_tracers_p .= read_file["grid_tracers_p_xyzt"][:,:,:,initial_day]
+        grid_tracers_n .= read_file["grid_tracers_n_final"][:,:,:,1] # large precipitation need next DO NOT REMOVE IT !!!
+        grid_tracers_c .= read_file["grid_tracers_c_final"][:,:,:,1]
+        grid_tracers_p .= read_file["grid_tracers_p_final"][:,:,:,1]
         
         # Trans_Grid_To_Spherical!(mesh, grid_tracers_c, spe_tracers_c)
         # Trans_Grid_To_Spherical!(mesh, grid_tracers_p, spe_tracers_p)
-        spe_tracers_c  .= read_file["spe_tracers_c_xyzt"][:,:,:,initial_day]
-        spe_tracers_p  .= read_file["spe_tracers_p_xyzt"][:,:,:,initial_day]
+        spe_tracers_c  .= read_file["spe_tracers_c_final"][:,:,:,1]
+        spe_tracers_p  .= read_file["spe_tracers_p_final"][:,:,:,1]
 
         # grid_δu .= read_file["grid_δu_xyzt"][:,:,:,initial_day] # Rayleigh_Damping! has given it value 
         # grid_δv .= read_file["grid_δv_xyzt"][:,:,:,initial_day] # Rayleigh_Damping! has given it value
@@ -814,11 +814,11 @@ end
 
 
 function Atmosphere_Update!(mesh::Spectral_Spherical_Mesh, atmo_data::Atmo_Data, vert_coord::Vert_Coordinate, semi_implicit::Semi_Implicit_Solver, 
-                            dyn_data::Dyn_Data, physcis_params::Dict{String, Float64})
+                            dyn_data::Dyn_Data, physcis_params::Dict{String, Float64}, L::Float64 = 0.05)
 
     Δt = Get_Δt(semi_implicit.integrator)
     Spectral_Dynamics_Physics!(atmo_data, mesh,  dyn_data, Δt, physcis_params) # HS forcing
-    Spectral_Dynamics!(mesh,  vert_coord , atmo_data, dyn_data, semi_implicit) # dynamics 
+    Spectral_Dynamics!(mesh,  vert_coord , atmo_data, dyn_data, semi_implicit, L) # dynamics 
     ### original
     grid_ps , grid_Δp, grid_p_half, grid_lnp_half, grid_p_full, grid_lnp_full = dyn_data.grid_ps_c,  dyn_data.grid_Δp, dyn_data.grid_p_half, dyn_data.grid_lnp_half, dyn_data.grid_p_full, dyn_data.grid_lnp_full 
     
@@ -836,7 +836,7 @@ function Atmosphere_Update!(mesh::Spectral_Spherical_Mesh, atmo_data::Atmo_Data,
 end 
 
 
-function HS_forcing_water_vapor!(semi_implicit::Semi_Implicit_Solver, grid_tracers_n::Array{Float64, 3},  grid_t_n::Array{Float64, 3}, grid_δt::Array{Float64, 3}, grid_p_full::Array{Float64, 3}, grid_u::Array{Float64, 3},  grid_v::Array{Float64, 3}, factor3::Array{Float64, 3}, grid_δtracers::Array{Float64, 3}, grid_tracers_c::Array{Float64, 3},grid_t::Array{Float64, 3})
+function HS_forcing_water_vapor!(semi_implicit::Semi_Implicit_Solver, grid_tracers_n::Array{Float64, 3},  grid_t_n::Array{Float64, 3}, grid_δt::Array{Float64, 3}, grid_p_full::Array{Float64, 3}, grid_u::Array{Float64, 3},  grid_v::Array{Float64, 3}, factor3::Array{Float64, 3}, grid_δtracers::Array{Float64, 3}, grid_tracers_c::Array{Float64, 3},grid_t::Array{Float64, 3}, L::Float64 = 0.05)
 
     integrator = semi_implicit.integrator
     Δt         = Get_Δt(integrator)
@@ -860,7 +860,8 @@ function HS_forcing_water_vapor!(semi_implicit::Semi_Implicit_Solver, grid_trace
 
     # latent heat feedback to temperature tendency 
     day_to_sec        = 86400.
-    L                 = 0.1
+    # L                 = 0.05
+    # @info "L:", L
     factor3          .= grid_tracers_diff
     diabatic_heating  = deepcopy(grid_tracers_diff)
     diabatic_heating .= (grid_tracers_diff .* Lv ./ cp) ./day_to_sec .* L 

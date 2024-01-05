@@ -481,12 +481,62 @@ function Finalize_Output!(output_manager::Output_Manager, save_file_name::String
 
     # grid_dλ_ps_xyzt = output_manager.grid_dλ_ps_xyzt
     # grid_dθ_ps_xyzt = output_manager.grid_dθ_ps_xyzt
+    ##############################################################################
+    spe_vor_c_final = spe_vor_c_xyzt[:,:,:,end]
+    spe_vor_p_final = spe_vor_p_xyzt[:,:,:,end]
+    spe_div_c_final = spe_div_c_xyzt[:,:,:,end]
+    spe_div_p_final = spe_div_p_xyzt[:,:,:,end]
+
+    spe_lnps_c_final = spe_lnps_c_xyzt[:,:,:,end]
+    spe_lnps_p_final = spe_lnps_p_xyzt[:,:,:,end]
+
+    spe_t_c_final = spe_t_c_xyzt[:,:,:,end]
+    spe_t_p_final = spe_t_p_xyzt[:,:,:,end]
+
+    spe_tracers_c_final = spe_tracers_c_xyzt[:,:,:,end]
+    spe_tracers_p_final = spe_tracers_p_xyzt[:,:,:,end]
+
+    grid_tracers_n_final = grid_tracers_n_xyzt[:,:,:,end]
+
+    grid_u_n_final = grid_u_n_xyzt[:,:,:,end]
+    grid_u_c_final = grid_u_c_xyzt[:,:,:,end]
+    grid_u_p_final = grid_u_p_xyzt[:,:,:,end]
+
+    grid_v_n_final = grid_v_n_xyzt[:,:,:,end]
+    grid_v_c_final = grid_v_c_xyzt[:,:,:,end]
+    grid_v_p_final = grid_v_p_xyzt[:,:,:,end]
+
+    grid_ps_c_final = grid_ps_c_xyzt[:,:,:,end]
+    grid_ps_p_final = grid_ps_p_xyzt[:,:,:,end]
+
+    grid_t_n_final = grid_t_n_xyzt[:,:,:,end]
+    grid_t_c_final = grid_t_c_xyzt[:,:,:,end]
+    grid_t_p_final = grid_t_p_xyzt[:,:,:,end]
+
+    grid_tracers_c_final = grid_tracers_c_xyzt[:,:,:,end]
+    grid_tracers_p_final = grid_tracers_p_xyzt[:,:,:,end]
+
+    grid_tracers_diff_final = grid_tracers_diff_xyzt[:,:,:,end]
+    grid_δtracers_final = grid_δtracers_xyzt[:,:,:,end]
+
+    grid_p_full_final = grid_p_full_xyzt[:,:,:,end]
+    grid_p_half_final = grid_p_half_xyzt[:,:,:,end]
+
+    grid_geopots_final = grid_geopots_xyzt[:,:,:,end]
+
+    grid_vor_final = grid_vor_xyzt[:,:,:,end]
+    grid_div_final = grid_div_xyzt[:,:,:,end]
+
+    grid_δu_final = grid_δu_xyzt[:,:,:,end]
+    grid_δv_final = grid_δv_xyzt[:,:,:,end]
+    
+    
     
     
     
     
     if save_file_name != "None"
-        @save save_file_name output_manager
+        @save save_file_name spe_vor_c_final spe_vor_p_final spe_div_c_final spe_div_p_final spe_lnps_c_final spe_lnps_p_final spe_t_c_final spe_t_p_final spe_tracers_c_final spe_tracers_p_final grid_tracers_n_final grid_u_n_final grid_u_c_final grid_u_p_final grid_v_n_final grid_v_c_final grid_v_p_final grid_ps_c_final grid_ps_p_final grid_t_n_final grid_t_c_final grid_t_p_final grid_tracers_c_final grid_tracers_p_final grid_tracers_diff_final grid_δtracers_final grid_p_full_final grid_p_half_final grid_geopots_final grid_vor_final grid_div_final grid_δu_final grid_δv_final
     end
 
     if mean_save_file_name != "None"
