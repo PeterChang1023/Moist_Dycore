@@ -220,7 +220,7 @@ We have
 
 function Spectral_Dynamics!(mesh::Spectral_Spherical_Mesh,  vert_coord::Vert_Coordinate, 
     atmo_data::Atmo_Data, dyn_data::Dyn_Data, 
-    semi_implicit::Semi_Implicit_Solver, L::Float64 = 0.05)
+    semi_implicit::Semi_Implicit_Solver, L::Float64 = 0.1)
     
     # spectral equation quantities
     spe_lnps_p, spe_lnps_c, spe_lnps_n, spe_δlnps = dyn_data.spe_lnps_p, dyn_data.spe_lnps_c, dyn_data.spe_lnps_n, dyn_data.spe_δlnps
@@ -309,19 +309,8 @@ function Spectral_Dynamics!(mesh::Spectral_Spherical_Mesh,  vert_coord::Vert_Coo
     # grid_δtracers .-= factor3 ./(2. .* Δt)
     ### try
     # @info maximum(grid_u)
-    
     """
-    ## large-scale precipitation
-    """
-    grid_δu, grid_δv, grid_δps, grid_δlnps, grid_δt = dyn_data.grid_δu, dyn_data.grid_δv, dyn_data.grid_δps, dyn_data.grid_δlnps, dyn_data.grid_δt
-    grid_tracers_diff_new                           = HS_forcing_water_vapor!(semi_implicit, grid_tracers_n,  grid_t_n, grid_δt, grid_p_full, grid_u, grid_v, factor3, grid_δtracers, grid_tracers_c, grid_t, L)
-    grid_tracers_diff                              .= grid_tracers_diff_new
-    grid_tracers_c[grid_tracers_c .< 0]            .= 0     
-   
-
-
-    """
-    ## surface evaporation 
+    # Cal V_c and za
     """
     V_c  = zeros(((128,64,20)))
     V_c .= (grid_u[:,:,:].^2 .+ grid_v[:,:,:].^2).^0.5
@@ -343,12 +332,36 @@ function Spectral_Dynamics!(mesh::Spectral_Spherical_Mesh,  vert_coord::Vert_Coo
     za[:,:,1] .= Rd .* tv[:,:,1] ./grav .* (log.(grid_ps[:,:,1] ./ ((grid_p_full[:,:,20] .+ grid_p_half[:,:,21]) ./ 2.) )) ./2
     # za[:,:,1] .= Rd .* tv[:,:,1] ./9.81 .* (log.(grid_ps[:,:,1] ./ ((grid_p_full[:,:,20] .+ grid_p_full[:,:,19]) ./ 2.))) ./2
     
-    # @info "#### za global minimum, maximum:" minimum(za), maximum(za)
+    @info "#### za global minimum, maximum:" minimum(za), maximum(za)
     ###     
+    
+    """
+    ## large-scale precipitation
+    """
+    grid_δu, grid_δv, grid_δps, grid_δlnps, grid_δt = dyn_data.grid_δu, dyn_data.grid_δv, dyn_data.grid_δps, dyn_data.grid_δlnps, dyn_data.grid_δt
+    grid_tracers_diff_new                           = HS_forcing_water_vapor!(semi_implicit, grid_tracers_n,  grid_t_n, grid_δt, grid_p_full, grid_u, grid_v, factor3, grid_δtracers, grid_tracers_c, grid_t, L)
+    grid_tracers_diff                              .= grid_tracers_diff_new
+    grid_tracers_c[grid_tracers_c .< 0]            .= 0     
+
+    # grid_tracers_c .= grid_tracers_c .+ grid_δtracers .* Δt
+    # grid_t         .= grid_t .+ grid_δt .* Δt
+    
+    """
+    ## surface evaporation 
+    """
+   θc = mesh.θc
+   Tsurf = zeros((128,64))
+   Tsurf = deepcopy(grid_t[:,:,20]) .*0
+   for i in 1:64
+     Tsurf[:,i] .= 29. .* exp.(-(θc[i] .^2. ./ (2 * (26. * pi / 180.)^2.))) .+ 271.
+   end
     surface_evaporation         = deepcopy(grid_δtracers).*0
 
     grid_tracers_c_ps_max           = zeros(((128,64,1)))
     grid_tracers_c_ps_max          .= (0.622 .* (611.12 .* exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ grid_t[:,:,20])) )) ./ (grid_ps[:,:,1] .- 0.378 .* (611.12 .* exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ grid_t[:,:,20])))) 
+    # grid_tracers_c_ps_max          .= (0.622 .* (611.12 .* exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ Tsurf[:,:])) )) ./ (grid_ps[:,:,1] .- 0.378 .* (611.12 .* exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ Tsurf[:,:])))) 
+    
+    
     
     factor1[:,:,20]              = (((grid_tracers_c[:,:,20] .+ C_E .* V_c[:,:,20] .* max.(grid_tracers_c[:,:,20],grid_tracers_c_ps_max[:,:,1]) .* Δt ./ za[:,:,1]) ./ (1. .+ C_E .* V_c[:,:,20]  .* Δt ./ za[:,:,1])) .- grid_tracers_c[:,:,20]) ./(2. .* Δt)
 
@@ -360,18 +373,31 @@ function Spectral_Dynamics!(mesh::Spectral_Spherical_Mesh,  vert_coord::Vert_Coo
    """
    # Sensible heat fluxes
    """
-#    θc = mesh.θc
-#    # Tsurf = zeros((128,64))
-#    # Tsurf = deepcopy(grid_t[:,:,20]) .*0
-#    # for i in 1:64
-#    #   Tsurf[:,i] .= 29. .* exp.(-(θc[i] .^2. ./ (2 * (26. * pi / 180.)^2.))) .+ 271.
-#    # end
+   # θc = mesh.θc
+   # Tsurf = zeros((128,64))
+   # Tsurf = deepcopy(grid_t[:,:,20]) .*0
+   # for i in 1:64
+   #   Tsurf[:,i] .= 29. .* exp.(-(θc[i] .^2. ./ (2 * (26. * pi / 180.)^2.))) .+ 271.
+   # end
+    
+   # grid_δt[:,:,20] .+= (((grid_t[:,:,20] .+ C_E .* V_c[:,:,20] .* Tsurf[:,:] .* (2. * Δt) ./ za[:,:,1])
+   #                       ./ (1. .+ C_E .* V_c[:,:,20] .* (2. * Δt) ./ za[:,:,1]) .- grid_t[:,:,20]) ./ (2. * Δt))
+   # @info "max: ", maximum(grid_δt[:,:,20])
+   # @info "min: ", minimum(grid_δt[:,:,20])
 
-#    grid_δt[:,:,20] .+= (((grid_t[:,:,20] .+ C_E .* V_c[:,:,20] .* grid_t[:,:,20] .* Δt ./ za[:,:,1])
-#                          ./ (1. .+ C_E .* V_c[:,:,20] .* Δt ./ za[:,:,1]) .- grid_t[:,:,20]) ./ Δt)
-#    grid_t_n[:,:,20]  .= ((grid_t[:,:,20] .+ C_E .* V_c[:,:,20] .* grid_t[:,:,20] .* Δt ./ za[:,:,1]) 
-#                          ./ (1. .+ C_E .* V_c[:,:,20] .* Δt ./ za[:,:,1]))
+   # grid_t[:,:,20]  .= ((grid_t[:,:,20] .+ C_E .* V_c[:,:,20] .* Tsurf[:,:] .* (2. * Δt) ./ za[:,:,1]) 
+   #                       ./ (1. .+ C_E .* V_c[:,:,20] .* (2. * Δt) ./ za[:,:,1]))
 
+   """
+   # Latent heat flux
+   """
+   # grid_δtracers[:,:,20] .+= (((grid_tracers_c[:,:,20] .+ C_E .* V_c[:,:,20] .* Tsurf[:,:] .* (2. * Δt) ./ za[:,:,1])
+   #                       ./ (1. .+ C_E .* V_c[:,:,20] .* (2. * Δt) ./ za[:,:,1]) .- grid_tracers_c[:,:,20]) ./ (2. * Δt))
+   # # @info "max: ", maximum(grid_δtracers[:,:,20])
+   # # @info "min: ", minimum(grid_δtracers[:,:,20])
+
+   # grid_tracers_c[:,:,20]  .= ((grid_tracers_c[:,:,20] .+ C_E .* V_c[:,:,20] .* Tsurf[:,:] .* (2. * Δt) ./ za[:,:,1]) 
+   #                       ./ (1. .+ C_E .* V_c[:,:,20] .* (2. * Δt) ./ za[:,:,1]))
 
 
     """
@@ -396,6 +422,8 @@ function Spectral_Dynamics!(mesh::Spectral_Spherical_Mesh,  vert_coord::Vert_Coo
     CC     = zeros(((128,64,20)))
     CE     = zeros(((128,64,20+1)))
     CF     = zeros(((128,64,20+1)))
+    CFt    = zeros(((128,64,20+1)))
+    
 
     for k in 1:19
         CA[:,:,k]   .= (rpdel[:,:,k]   .* 2. .* Δt .* grav.^2 .* K_E[:,:,k+1]   .* rho[:,:,k+1].^2 
@@ -412,14 +440,21 @@ function Spectral_Dynamics!(mesh::Spectral_Spherical_Mesh,  vert_coord::Vert_Coo
     CE[:,:, 1]   .= 0.
     CE[:,:,21]   .= 0.
     CF[:,:,21]   .= 0.
+    CFt[:,:,21]  .= 0.
+    
     # @info minimum(CA)
     # @info minimum(CC)
 
-
+    p0 = 100000.
     for k in 20:-1:1
         CE[:,:,k]    .= CC[:,:,k] ./ (1. .+ CA[:,:,k] .+ CC[:,:,k] .- CA[:,:,k] .* CE[:,:,k+1])
         CF[:,:,k]    .= ((grid_tracers_c[:,:,k] .+ CA[:,:,k] .* CF[:,:,k+1])
                         ./ (1. .+ CA[:,:,k] .+ CC[:,:,k] .- CA[:,:,k] .* CE[:,:,k+1]))
+
+        CFt[:,:,k]   .= (((p0./grid_p_full[:,:,k]).^(Rd/cp).*grid_t[:,:,k] .+ CA[:,:,k] .* CFt[:,:,k+1])
+                        ./ (1. .+ CA[:,:,k] .+ CC[:,:,k] .- CA[:,:,k] .* CE[:,:,k+1]))
+
+        
     end
     # @info maximum(CE)
     # @info maximum(CF)
@@ -430,15 +465,24 @@ function Spectral_Dynamics!(mesh::Spectral_Spherical_Mesh,  vert_coord::Vert_Coo
     ### So did factor2
     factor2[:,:,1]        .= (CF[:,:,1] .- grid_tracers_n[:,:,1]) ./ (2. .* Δt)  # because CE at top = 0
     grid_tracers_n[:,:,1] .= CF[:,:,1] 
+    ##########################################################################################
+    grid_δt[:,:,1] .+= (CFt[:,:,1] .* (grid_p_full[:,:,1]./p0).^(Rd/cp) .- grid_t[:,:,1]) ./ (2. .* Δt)
+    grid_t_n[:,:,1] .= (CFt[:,:,1] .* (grid_p_full[:,:,1]./p0).^(Rd/cp))
+
+    
     # Loop over the remaining level
     for k in 2:19
         grid_δtracers[:,:,k]  .+= (CE[:,:,k] .* grid_tracers_n[:,:,k-1] .+ CF[:,:,k] .- grid_tracers_n[:,:,k]) ./ (2. .* Δt)
         factor2[:,:,k]         .= (CE[:,:,k] .* grid_tracers_n[:,:,k-1] .+ CF[:,:,k] .- grid_tracers_n[:,:,k]) ./ (2. .* Δt)
         grid_tracers_n[:,:,k]  .=  CE[:,:,k] .* grid_tracers_n[:,:,k-1] .+ CF[:,:,k]
+    #######################################################################################
+        grid_δt[:,:,k]  .+= ((CE[:,:,k] .* grid_t[:,:,k-1] .* (p0./grid_p_full[:,:,k-1]).^(Rd/cp) .+ CFt[:,:,k]) .* (grid_p_full[:,:,k]./p0).^(Rd/cp) .- grid_t[:,:,k]) ./ (2. .* Δt)
+        grid_t[:,:,k] .= ((CE[:,:,k] .* grid_t[:,:,k-1] .* (p0./grid_p_full[:,:,k-1]).^(Rd/cp) .+ CFt[:,:,k]) .* (grid_p_full[:,:,k]./p0).^(Rd/cp))
     end
     # @info maximum(CE), minimum(CE)
     # @info maximum(CF), minimum(CF)
 
+    
 
     # Calculate latent heat and modify qv_current
     # HS_forcing_water_vapor!(grid_tracers_c,  grid_δtracers, grid_t, grid_δt, grid_p_full)
@@ -814,7 +858,7 @@ end
 
 
 function Atmosphere_Update!(mesh::Spectral_Spherical_Mesh, atmo_data::Atmo_Data, vert_coord::Vert_Coordinate, semi_implicit::Semi_Implicit_Solver, 
-                            dyn_data::Dyn_Data, physcis_params::Dict{String, Float64}, L::Float64 = 0.05)
+                            dyn_data::Dyn_Data, physcis_params::Dict{String, Float64}, L::Float64 = 0.1)
 
     Δt = Get_Δt(semi_implicit.integrator)
     Spectral_Dynamics_Physics!(atmo_data, mesh,  dyn_data, Δt, physcis_params) # HS forcing
@@ -836,7 +880,7 @@ function Atmosphere_Update!(mesh::Spectral_Spherical_Mesh, atmo_data::Atmo_Data,
 end 
 
 
-function HS_forcing_water_vapor!(semi_implicit::Semi_Implicit_Solver, grid_tracers_n::Array{Float64, 3},  grid_t_n::Array{Float64, 3}, grid_δt::Array{Float64, 3}, grid_p_full::Array{Float64, 3}, grid_u::Array{Float64, 3},  grid_v::Array{Float64, 3}, factor3::Array{Float64, 3}, grid_δtracers::Array{Float64, 3}, grid_tracers_c::Array{Float64, 3},grid_t::Array{Float64, 3}, L::Float64 = 0.05)
+function HS_forcing_water_vapor!(semi_implicit::Semi_Implicit_Solver, grid_tracers_n::Array{Float64, 3},  grid_t_n::Array{Float64, 3}, grid_δt::Array{Float64, 3}, grid_p_full::Array{Float64, 3}, grid_u::Array{Float64, 3},  grid_v::Array{Float64, 3}, factor3::Array{Float64, 3}, grid_δtracers::Array{Float64, 3}, grid_tracers_c::Array{Float64, 3},grid_t::Array{Float64, 3}, L::Float64 = 0.1)
 
     integrator = semi_implicit.integrator
     Δt         = Get_Δt(integrator)
@@ -866,6 +910,7 @@ function HS_forcing_water_vapor!(semi_implicit::Semi_Implicit_Solver, grid_trace
     diabatic_heating  = deepcopy(grid_tracers_diff)
     diabatic_heating .= (grid_tracers_diff .* Lv ./ cp) ./day_to_sec .* L 
     # @info "max: ", maximum(diabatic_heating)
+    
     grid_δt         .+= (grid_tracers_diff .* Lv ./ cp) .* L 
     
     ###
