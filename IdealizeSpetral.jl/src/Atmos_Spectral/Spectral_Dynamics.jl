@@ -330,7 +330,7 @@ function Spectral_Dynamics!(mesh::Spectral_Spherical_Mesh,  vert_coord::Vert_Coo
     za         = zeros(((128,64,1)))
     tv[:,:,1] .= grid_t[:,:,20] .* (1. .+ 0.608 .* grid_tracers_c[:,:,20])
     za[:,:,1] .= Rd .* tv[:,:,1] ./grav .* (log.(grid_ps[:,:,1] ./ ((grid_p_full[:,:,20] .+ grid_p_half[:,:,21]) ./ 2.) )) ./2
-    # za[:,:,1] .= Rd .* tv[:,:,1] ./9.81 .* (log.(grid_ps[:,:,1] ./ ((grid_p_full[:,:,20] .+ grid_p_full[:,:,19]) ./ 2.))) ./2
+    # za[:,:,1] .= Rd .* tv[:,:,1] ./9.81 .* (log.(grid_ps[:,:,1]) .- log.((grid_p_full[:,:,20] .+ grid_p_full[:,:,19]) ./ 2.)) ./2
     
     @info "#### za global minimum, maximum:" minimum(za), maximum(za)
     ###     
@@ -358,8 +358,8 @@ function Spectral_Dynamics!(mesh::Spectral_Spherical_Mesh,  vert_coord::Vert_Coo
     surface_evaporation         = deepcopy(grid_δtracers).*0
 
     grid_tracers_c_ps_max           = zeros(((128,64,1)))
-    grid_tracers_c_ps_max          .= (0.622 .* (611.12 .* exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ grid_t[:,:,20])) )) ./ (grid_ps[:,:,1] .- 0.378 .* (611.12 .* exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ grid_t[:,:,20])))) 
-    # grid_tracers_c_ps_max          .= (0.622 .* (611.12 .* exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ Tsurf[:,:])) )) ./ (grid_ps[:,:,1] .- 0.378 .* (611.12 .* exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ Tsurf[:,:])))) 
+    # grid_tracers_c_ps_max          .= (0.622 .* (611.12 .* exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ grid_t[:,:,20])) )) ./ (grid_ps[:,:,1] .- 0.378 .* (611.12 .* exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ grid_t[:,:,20])))) 
+    grid_tracers_c_ps_max          .= (0.622 .* (611.12 .* exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ Tsurf[:,:])) )) ./ (grid_ps[:,:,1] .- 0.378 .* (611.12 .* exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ Tsurf[:,:])))) 
     
     
     
@@ -381,7 +381,7 @@ function Spectral_Dynamics!(mesh::Spectral_Spherical_Mesh,  vert_coord::Vert_Coo
    # end
     
    # grid_δt[:,:,20] .+= (((grid_t[:,:,20] .+ C_E .* V_c[:,:,20] .* Tsurf[:,:] .* (2. * Δt) ./ za[:,:,1])
-   #                       ./ (1. .+ C_E .* V_c[:,:,20] .* (2. * Δt) ./ za[:,:,1]) .- grid_t[:,:,20]) ./ (2. * Δt))
+   #                       ./ (1. .+ C_E .* V_c[:,:,20] .* (2. * Δt) ./ za[:,:,1]) .- Tsurf[:,:]) ./ (2. * Δt))
    # @info "max: ", maximum(grid_δt[:,:,20])
    # @info "min: ", minimum(grid_δt[:,:,20])
 
@@ -391,13 +391,13 @@ function Spectral_Dynamics!(mesh::Spectral_Spherical_Mesh,  vert_coord::Vert_Coo
    """
    # Latent heat flux
    """
-   # grid_δtracers[:,:,20] .+= (((grid_tracers_c[:,:,20] .+ C_E .* V_c[:,:,20] .* Tsurf[:,:] .* (2. * Δt) ./ za[:,:,1])
-   #                       ./ (1. .+ C_E .* V_c[:,:,20] .* (2. * Δt) ./ za[:,:,1]) .- grid_tracers_c[:,:,20]) ./ (2. * Δt))
-   # # @info "max: ", maximum(grid_δtracers[:,:,20])
-   # # @info "min: ", minimum(grid_δtracers[:,:,20])
+   grid_δtracers[:,:,20] .+= (((grid_tracers_c[:,:,20] .+ C_E .* V_c[:,:,20] .* grid_tracers_c_ps_max[:,:,1] .* (2. * Δt) ./ za[:,:,1])
+                         ./ (1. .+ C_E .* V_c[:,:,20] .* (2. * Δt) ./ za[:,:,1]) .- grid_tracers_c[:,:,20]) ./ (2. * Δt))
+   # @info "max: ", maximum(grid_δtracers[:,:,20])
+   # @info "min: ", minimum(grid_δtracers[:,:,20])
 
-   # grid_tracers_c[:,:,20]  .= ((grid_tracers_c[:,:,20] .+ C_E .* V_c[:,:,20] .* Tsurf[:,:] .* (2. * Δt) ./ za[:,:,1]) 
-   #                       ./ (1. .+ C_E .* V_c[:,:,20] .* (2. * Δt) ./ za[:,:,1]))
+   grid_tracers_c[:,:,20]  .= ((grid_tracers_c[:,:,20] .+ C_E .* V_c[:,:,20] .* grid_tracers_c_ps_max[:,:,1] .* (2. * Δt) ./ za[:,:,1]) 
+                         ./ (1. .+ C_E .* V_c[:,:,20] .* (2. * Δt) ./ za[:,:,1]))
 
 
     """
