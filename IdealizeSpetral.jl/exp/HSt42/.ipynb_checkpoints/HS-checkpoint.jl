@@ -13,7 +13,7 @@ function Atmos_Spectral_Dynamics_Main(physcis_params::Dict{String, Float64}, end
     radius = 6371000.0
     omega = 7.292e-5
     sea_level_ps_ref = 1.0e5
-    init_t = 264.0
+    init_t = 271.0 #264.0
 
     
     # Initialize mesh
