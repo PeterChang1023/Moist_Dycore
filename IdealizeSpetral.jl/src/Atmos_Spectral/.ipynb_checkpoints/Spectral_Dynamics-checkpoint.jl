@@ -528,12 +528,14 @@ function Spectral_Dynamics!(mesh::Spectral_Spherical_Mesh,  vert_coord::Vert_Coo
     Vert_Advection!(vert_coord, grid_t, grid_Δp, grid_M_half, Δt, vert_coord.vert_advect_scheme, grid_δQ)
     grid_δt  .+= grid_δQ
     ### By CJY2
+    tracers_convection = zeros(((128,64,20)))
     Vert_Advection!(vert_coord, grid_tracers_c, grid_Δp, grid_M_half, Δt, vert_coord.vert_advect_scheme,  grid_δQ)
-    grid_δtracers .+= grid_δQ 
+    tracers_convection .+= grid_δQ 
 
 
     ### spectral tracers need to be done first 
-    Add_Horizontal_Advection!(mesh, spe_tracers_c, grid_u, grid_v, grid_δtracers) 
+    Add_Horizontal_Advection!(mesh, spe_tracers_c, grid_u, grid_v, tracers_convection) 
+    grid_δtracers .+= tracers_convection
     Trans_Grid_To_Spherical!(mesh, grid_δtracers, spe_δtracers)
     Compute_Spectral_Damping!(integrator, spe_tracers_c, spe_tracers_p, spe_δtracers)
     Filtered_Leapfrog!(integrator, spe_δtracers, spe_tracers_p, spe_tracers_c, spe_tracers_n)
