@@ -15,6 +15,9 @@ function Compute_Pressures_And_Heights!(atmo_data::Atmo_Data, vert_coord::Vert_C
 
   grid_z_full ./= grav
   grid_z_half ./= grav
+  # @info "max:", maximum(grid_z_full[:,:,20])
+  # @info "min:", minimum(grid_z_full[:,:,20])
+
 
 end 
 
