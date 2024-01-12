@@ -3,7 +3,7 @@ using JGCM
 include("HS.jl")
 
 
-end_day = 50
+end_day = 5
 spinup_day = 0
 
 
@@ -17,8 +17,8 @@ op_man = Atmos_Spectral_Dynamics_Main(physics_params, end_day, spinup_day)
 # Finalize_Output!(op_man, "15day_test_all.dat", "15day_test_final.dat")
 # Finalize_Output!(op_man, "10day_test_all.dat", "10day_test_final.dat")
 # Finalize_Output!(op_man, "test_all.dat", "test_final.dat")
-Finalize_Output!(op_man, "50day_test_all.dat", "50day_test_final.dat")
-# Finalize_Output!(op_man, "5day_test_all.dat", "5day_test_final.dat")
+# Finalize_Output!(op_man, "50day_test_all.dat", "50day_test_final.dat")
+Finalize_Output!(op_man, "5day_test_all.dat", "5day_test_final.dat")
 
 
 
