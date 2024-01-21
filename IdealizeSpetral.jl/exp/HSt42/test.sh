@@ -7,7 +7,7 @@ space_day=100
 
 for i in `seq $start_day $space_day $final_day`
 do
-L=10
+L=50
 echo $i"day"
 echo -n $L > Latent_heat.txt
 
