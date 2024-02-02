@@ -59,15 +59,21 @@ end
 
 
 function Compute_Vert_Coord(nd::Int64, vert_coord_option::String,
-    p_ref::Float64 = 101325., zero_top::Bool = true,
+    p_ref::Float64 = 101510., 
+    zero_top::Bool = true,
     scale_heights::Float64 = 4.0, surf_res::Float64 = 1.0, 
-    p_press::Float64 = 0.1,  p_sigma::Float64 = 0.3,  exponent::Float64 = 2.5)
+    p_press::Float64 = 0.1,  p_sigma::Float64 = 0.3,  exponent::Float64 = 2.5) #101325
     
     
     if (vert_coord_option == "even_sigma") 
         a, b = Compute_Even_Sigma(nd)
     elseif (vert_coord_option == "uneven_sigma") 
-        a, b = Compute_Uneven_Sigma(nd, a, b, scale_heights, surf_res, exponent, true)
+        # a = zeros(Float64, nd+1)
+        # b = zeros(Float64, nd+1)
+        
+        a, b = Compute_Uneven_Sigma(nd, scale_heights, surf_res, exponent, true)
+        # a, b = Compute_Uneven_Sigma(nd, a, b, scale_heights, surf_res, exponent, true)
+        
     elseif (vert_coord_option == "hybrid") 
         a_sigma, b_sigma = Compute_Uneven_Sigma(scale_heights, surf_res, exponent, false)
         b_press, a_press = Compute_Uneven_Sigma(scale_heights, surf_res, exponent, false)

@@ -2,14 +2,15 @@
 
 
 start_day=0
-final_day=1000
-space_day=100
+final_day=20
+space_day=2
 
 for i in `seq $start_day $space_day $final_day`
 do
-L=50
+L=20
 echo $i"day"
 echo -n $L > Latent_heat.txt
+
 
 if [ $i -eq 0 ]; then
 	rm -rf HSt42_${L}
@@ -20,8 +21,15 @@ else
 	echo -n "warmstart.dat" > HSt42_${L}/firstday_file.txt
 fi
 
-
 julia Run_HS.jl
+L=20 # To make sure that it wouldn't run the wrong L !!!
+     # When there are many L run simultaneously, L might be mistaken.
+     # For example, 
+     # If you run the first file L = 0, it takes you about 1 hour to run julia Run_HS.jl, 
+     # in this hour, if you run the second file, for example, L = 10, 
+     # then after the first file finish julia Run_HS.jl,
+     # it run the below code, it would take the output file to HSt42_10 (should've taken to HSt42_0) !!!
+     # So to fix this, it should command second time to tell it the correct L !!!
 
 if [ -f "HSt42_${L}/warmstart.dat" ] && [ $i -lt $final_day ]; then
 	cp "HSt42_"${L}"/warmstart.dat" "warmstart.dat"
