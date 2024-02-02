@@ -7,7 +7,7 @@ space_day=100
 
 for i in `seq $start_day $space_day $final_day`
 do
-L=10
+L=0
 echo $i"day"
 echo -n $L > Latent_heat.txt
 
@@ -22,7 +22,7 @@ else
 fi
 
 julia Run_HS.jl
-L=10 # To make sure that it wouldn't run the wrong L !!!
+L=0 # To make sure that it wouldn't run the wrong L !!!
      # When there are many L run simultaneously, L might be mistaken.
      # For example, 
      # If you run the first file L = 0, it takes you about 1 hour to run julia Run_HS.jl, 

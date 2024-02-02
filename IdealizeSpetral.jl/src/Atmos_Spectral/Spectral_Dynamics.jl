@@ -525,6 +525,7 @@ function Spectral_Initialize_Fields!(mesh::Spectral_Spherical_Mesh, atmo_data::A
 
         grid_δtracers = dyn_data.grid_δtracers
         ########################################################
+        @info warm_start_file_name # to make sure get the correct warmstart_PR.dat
         read_file     = load(warm_start_file_name)        
         grid_u[:,:,:]    .= read_file["grid_u_c_final"][:,:,:,1]
         grid_v[:,:,:]    .= read_file["grid_v_c_final"][:,:,:,1]  

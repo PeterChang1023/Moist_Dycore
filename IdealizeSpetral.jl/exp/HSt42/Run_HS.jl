@@ -43,7 +43,7 @@ physics_params = Dict{String,Float64}("σ_b"=>0.7, "k_f" => 1.0, "k_a" => 1.0/40
 op_man = Atmos_Spectral_Dynamics_Main(physics_params, end_day, spinup_day, L)
 
 
-Finalize_Output!(op_man, path * "warmstart.dat", path * "all_L"*L_int*".dat")
+Finalize_Output!(op_man, path * "warmstart_$(L_float).dat", path * "all_L"*L_int*".dat") # fix the problem of warmstart.dat will mistaken 2024/01/30
 
 
 ### time ###
