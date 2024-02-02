@@ -109,6 +109,8 @@ mutable struct Output_Manager
     convection_xyzt::Array{Float64,4}
 
     grid_z_full_xyzt::Array{Float64,4}
+    grid_w_full_xyzt::Array{Float64,4}
+    
 
     
 
@@ -216,12 +218,14 @@ function Output_Manager(mesh::Spectral_Spherical_Mesh, vert_coord::Vert_Coordina
     convection_xyzt = zeros(Float64, nλ,  nθ, nd, n_day)
 
     grid_z_full_xyzt = zeros(Float64, nλ,  nθ, nd, n_day)
+    grid_w_full_xyzt = zeros(Float64, nλ,  nθ, nd, n_day)
+    
     
     
     
     Output_Manager(nλ, nθ, nd, n_day,
     day_to_sec, start_time, end_time, current_time, spinup_day,
-    λc, θc, σc, n_daily_mean, spe_vor_c_xyzt, spe_vor_p_xyzt, spe_div_c_xyzt, spe_div_p_xyzt, spe_lnps_c_xyzt, spe_lnps_p_xyzt, spe_t_c_xyzt, spe_t_p_xyzt, spe_tracers_c_xyzt, spe_tracers_p_xyzt, grid_u_n_xyzt, grid_u_c_xyzt, grid_u_p_xyzt, grid_v_n_xyzt, grid_v_c_xyzt, grid_v_p_xyzt, grid_ps_c_xyzt, grid_ps_p_xyzt, grid_t_n_xyzt, grid_t_c_xyzt, grid_t_p_xyzt, grid_tracers_n_xyzt, grid_tracers_c_xyzt, grid_tracers_p_xyzt, grid_tracers_diff_xyzt, grid_δtracers_xyzt, factor1_xyzt, factor2_xyzt, factor3_xyzt, factor4_xyzt, grid_p_full_xyzt, grid_p_half_xyzt, grid_geopots_xyzt, grid_vor_xyzt, grid_div_xyzt, grid_δu_xyzt, grid_δv_xyzt, convection_xyzt, grid_z_full_xyzt)
+    λc, θc, σc, n_daily_mean, spe_vor_c_xyzt, spe_vor_p_xyzt, spe_div_c_xyzt, spe_div_p_xyzt, spe_lnps_c_xyzt, spe_lnps_p_xyzt, spe_t_c_xyzt, spe_t_p_xyzt, spe_tracers_c_xyzt, spe_tracers_p_xyzt, grid_u_n_xyzt, grid_u_c_xyzt, grid_u_p_xyzt, grid_v_n_xyzt, grid_v_c_xyzt, grid_v_p_xyzt, grid_ps_c_xyzt, grid_ps_p_xyzt, grid_t_n_xyzt, grid_t_c_xyzt, grid_t_p_xyzt, grid_tracers_n_xyzt, grid_tracers_c_xyzt, grid_tracers_p_xyzt, grid_tracers_diff_xyzt, grid_δtracers_xyzt, factor1_xyzt, factor2_xyzt, factor3_xyzt, factor4_xyzt, grid_p_full_xyzt, grid_p_half_xyzt, grid_geopots_xyzt, grid_vor_xyzt, grid_div_xyzt, grid_δu_xyzt, grid_δv_xyzt, convection_xyzt, grid_z_full_xyzt, grid_w_full_xyzt)
 end
 
 function Update_Output!(output_manager::Output_Manager, dyn_data::Dyn_Data, current_time::Int64)
@@ -314,6 +318,8 @@ function Update_Output!(output_manager::Output_Manager, dyn_data::Dyn_Data, curr
     convection_xyzt = output_manager.convection_xyzt
 
     grid_z_full_xyzt = output_manager.grid_z_full_xyzt
+    grid_w_full_xyzt = output_manager.grid_w_full_xyzt
+    
     
     
 
@@ -408,6 +414,8 @@ function Update_Output!(output_manager::Output_Manager, dyn_data::Dyn_Data, curr
     convection_xyzt[:,:,:,i_day] .= dyn_data.convection[:,:,:]
 
     grid_z_full_xyzt[:,:,:,i_day] .= dyn_data.grid_z_full[:,:,:]
+    grid_w_full_xyzt[:,:,:,i_day] .= dyn_data.grid_w_full[:,:,:]
+    
     
     
 
@@ -502,6 +510,7 @@ function Finalize_Output!(output_manager::Output_Manager, save_file_name::String
     convection_xyzt = output_manager.convection_xyzt
 
     grid_z_full_xyzt = output_manager.grid_z_full_xyzt
+    grid_w_full_xyzt = output_manager.grid_w_full_xyzt
     ##############################################################################
     spe_vor_c_final = spe_vor_c_xyzt[:,:,:,end]
     spe_vor_p_final = spe_vor_p_xyzt[:,:,:,end]
@@ -552,6 +561,9 @@ function Finalize_Output!(output_manager::Output_Manager, save_file_name::String
     grid_δv_final = grid_δv_xyzt[:,:,:,end]
 
     convection_final = convection_xyzt[:,:,:,end]
+
+    grid_w_full_final = grid_w_full_xyzt[:,:,:,end]
+    
     
     
     
@@ -559,11 +571,11 @@ function Finalize_Output!(output_manager::Output_Manager, save_file_name::String
     
     
     if save_file_name != "None"
-        @save save_file_name spe_vor_c_final spe_vor_p_final spe_div_c_final spe_div_p_final spe_lnps_c_final spe_lnps_p_final spe_t_c_final spe_t_p_final spe_tracers_c_final spe_tracers_p_final grid_tracers_n_final grid_u_n_final grid_u_c_final grid_u_p_final grid_v_n_final grid_v_c_final grid_v_p_final grid_ps_c_final grid_ps_p_final grid_t_n_final grid_t_c_final grid_t_p_final grid_tracers_c_final grid_tracers_p_final grid_tracers_diff_final grid_δtracers_final grid_p_full_final grid_p_half_final grid_geopots_final grid_vor_final grid_div_final grid_δu_final grid_δv_final convection_final
+        @save save_file_name spe_vor_c_final spe_vor_p_final spe_div_c_final spe_div_p_final spe_lnps_c_final spe_lnps_p_final spe_t_c_final spe_t_p_final spe_tracers_c_final spe_tracers_p_final grid_tracers_n_final grid_u_n_final grid_u_c_final grid_u_p_final grid_v_n_final grid_v_c_final grid_v_p_final grid_ps_c_final grid_ps_p_final grid_t_n_final grid_t_c_final grid_t_p_final grid_tracers_c_final grid_tracers_p_final grid_tracers_diff_final grid_δtracers_final grid_p_full_final grid_p_half_final grid_geopots_final grid_vor_final grid_div_final grid_δu_final grid_δv_final convection_final grid_w_full_final
     end
 
     if mean_save_file_name != "None"
-        @save mean_save_file_name spe_vor_c_xyzt spe_vor_p_xyzt spe_div_c_xyzt spe_div_p_xyzt spe_lnps_c_xyzt spe_lnps_p_xyzt spe_t_c_xyzt spe_t_p_xyzt spe_tracers_c_xyzt spe_tracers_p_xyzt grid_tracers_n_xyzt grid_u_n_xyzt grid_u_c_xyzt  grid_u_p_xyzt grid_v_n_xyzt grid_v_c_xyzt grid_v_p_xyzt grid_ps_c_xyzt grid_ps_p_xyzt grid_t_n_xyzt grid_t_c_xyzt grid_t_p_xyzt grid_tracers_c_xyzt grid_tracers_p_xyzt grid_tracers_diff_xyzt grid_δtracers_xyzt factor1_xyzt factor2_xyzt factor3_xyzt grid_p_full_xyzt grid_p_half_xyzt grid_geopots_xyzt  grid_vor_xyzt  grid_div_xyzt grid_δu_xyzt grid_δv_xyzt convection_xyzt factor4_xyzt grid_z_full_xyzt
+        @save mean_save_file_name spe_vor_c_xyzt spe_vor_p_xyzt spe_div_c_xyzt spe_div_p_xyzt spe_lnps_c_xyzt spe_lnps_p_xyzt spe_t_c_xyzt spe_t_p_xyzt spe_tracers_c_xyzt spe_tracers_p_xyzt grid_tracers_n_xyzt grid_u_n_xyzt grid_u_c_xyzt  grid_u_p_xyzt grid_v_n_xyzt grid_v_c_xyzt grid_v_p_xyzt grid_ps_c_xyzt grid_ps_p_xyzt grid_t_n_xyzt grid_t_c_xyzt grid_t_p_xyzt grid_tracers_c_xyzt grid_tracers_p_xyzt grid_tracers_diff_xyzt grid_δtracers_xyzt factor1_xyzt factor2_xyzt factor3_xyzt grid_p_full_xyzt grid_p_half_xyzt grid_geopots_xyzt  grid_vor_xyzt  grid_div_xyzt grid_δu_xyzt grid_δv_xyzt convection_xyzt factor4_xyzt grid_z_full_xyzt grid_w_full_xyzt
     end
 end
 
