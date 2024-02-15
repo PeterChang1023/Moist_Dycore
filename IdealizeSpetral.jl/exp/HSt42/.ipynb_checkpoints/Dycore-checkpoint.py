@@ -21,6 +21,11 @@ class Dycore:
         self.p  = self.getVar("grid_p_full_xyzt")
         self.p_half  = self.getVar("grid_p_half_xyzt")
 
+        # self.z_half  = self.getVar("grid_z_half_xyzt")
+        self.z_full  = self.getVar("grid_z_full_xyzt")
+        
+        
+
         self.qv   = self.getVar("grid_tracers_c_xyzt")
         # self.qv_p = self.getVar("grid_tracers_p_xyzt")
         # self.qv_n = self.getVar("grid_tracers_n_xyzt")
@@ -58,8 +63,8 @@ class Dycore:
         # self.u  = self.ds["grid_u_c_xyzt"]
         return np.asarray(self.ds[var])
     
-    def cal_KE(self):
-        self.KE = (self.u**2 + self.v**2)
+    def cal_KE(self, u, v):
+        self.KE = (u**2 + v**2)
         self.KE_mean = np.nanmean(self.KE, axis=(1,3))
         return self.KE_mean
     

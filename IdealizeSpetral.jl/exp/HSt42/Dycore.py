@@ -21,6 +21,11 @@ class Dycore:
         self.p  = self.getVar("grid_p_full_xyzt")
         self.p_half  = self.getVar("grid_p_half_xyzt")
 
+        # self.z_half  = self.getVar("grid_z_half_xyzt")
+        self.z_full  = self.getVar("grid_z_full_xyzt")
+        
+        
+
         self.qv   = self.getVar("grid_tracers_c_xyzt")
         # self.qv_p = self.getVar("grid_tracers_p_xyzt")
         # self.qv_n = self.getVar("grid_tracers_n_xyzt")
