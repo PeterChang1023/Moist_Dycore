@@ -2,7 +2,7 @@
 
 
 start_day=0
-final_day=1600
+final_day=3000
 space_day=100
 
 for i in `seq $start_day $space_day $final_day`
@@ -18,6 +18,7 @@ if [ $i -eq 0 ]; then
 	echo -n $space_day > HSt42_${L}/day_interval.txt
 	echo -n "None" > HSt42_${L}/firstday_file.txt
 else
+	echo -n $space_day > HSt42_${L}/day_interval.txt
 	echo -n "warmstart_${L}.dat" > HSt42_${L}/firstday_file.txt
 fi
 
