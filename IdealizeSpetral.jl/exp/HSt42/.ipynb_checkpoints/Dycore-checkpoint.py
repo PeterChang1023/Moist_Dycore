@@ -32,6 +32,8 @@ class Dycore:
         
         
         self.qv_diff = self.getVar("grid_tracers_diff_xyzt")
+        self.w = self.getVar("grid_w_full_xyzt")
+        
         # self.factor1 = self.getVar("factor1_xyzt")
         # self.factor2 = self.getVar("factor2_xyzt")
         # self.factor3 = self.getVar("factor3_xyzt")
