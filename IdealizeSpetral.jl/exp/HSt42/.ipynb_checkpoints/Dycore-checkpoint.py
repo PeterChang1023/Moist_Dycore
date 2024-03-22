@@ -81,7 +81,7 @@ class Dycore:
         Prec_mean = np.nansum(Prec, axis=(1))
         Prec_mean2 = np.nanmean(Prec_mean, axis=(2))
         
-        return Prec_mean2
+        return Prec_mean2, Prec
     
     def cal_t(self):
         print(np.nanmax(self.t), np.nanmin(self.t))
