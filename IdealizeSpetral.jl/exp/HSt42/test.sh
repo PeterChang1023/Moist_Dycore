@@ -2,7 +2,7 @@
 
 
 start_day=0
-final_day=3000
+final_day=20000
 space_day=100
 
 for i in `seq $start_day $space_day $final_day`
