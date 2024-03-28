@@ -860,8 +860,8 @@ function Spectral_Dynamics_Physics!(semi_implicit::Semi_Implicit_Solver, atmo_da
         grid_tracers_c[grid_tracers_c .< 0]   .= 0     
     
         
-        grid_tracers_c .= grid_tracers_c .- grid_δtracers .* Δt
-        grid_t         .= grid_t         .+ grid_δt       .* Δt
+        grid_tracers_c .= grid_tracers_c .- grid_δtracers .* (2*Δt)
+        grid_t         .= grid_t         .+ grid_δt       .* (2*Δt)
     
         Trans_Grid_To_Spherical!(mesh, grid_tracers_c, spe_tracers_c)
         Trans_Spherical_To_Grid!(mesh, spe_tracers_c, grid_tracers_c)
