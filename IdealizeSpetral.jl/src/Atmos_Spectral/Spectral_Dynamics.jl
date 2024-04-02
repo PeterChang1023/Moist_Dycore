@@ -994,8 +994,12 @@ function Calculate_V_c_za_rho!(dyn_data::Dyn_Data, atmo_data::Atmo_Data, grid_p_
     """
     # Cal V_c and za
     """
-    V_c  = zeros(((128,64,20)))
-    V_c .= (grid_u[:,:,:].^2 .+ grid_v[:,:,:].^2).^0.5
+    # V_c  = zeros(((128,64,20)))
+    # V_c .= (grid_u[:,:,:].^2 .+ grid_v[:,:,:].^2).^0.5
+    
+    # Calculate V_c
+    V_c = sqrt.(grid_u .^ 2 .+ grid_v .^ 2)
+    
     ### add moisture at surface following paper
     ### ∂q_a/∂t = C_E * V_a * (q_sat,a - q_a) ./ z_a 
 
