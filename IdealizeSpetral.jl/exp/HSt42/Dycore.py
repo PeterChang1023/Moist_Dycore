@@ -14,7 +14,6 @@ class Dycore:
         # self.u_p  = self.getVar("grid_u_p_xyzt")
         # self.u_n  = self.getVar("grid_u_n_xyzt")
         
-        
         self.v  = self.getVar("grid_v_c_xyzt")
         self.t  = self.getVar("grid_t_c_xyzt")
         self.ps = self.getVar("grid_ps_c_xyzt")
@@ -62,7 +61,6 @@ class Dycore:
         self.cy[-1] = np.nan
 
     def getVar(self, var):
-        # self.u  = self.ds["grid_u_c_xyzt"]
         return np.asarray(self.ds[var])
     
     def cal_KE(self, u, v):
