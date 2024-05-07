@@ -960,7 +960,7 @@ function HS_forcing_water_vapor!(semi_implicit::Semi_Implicit_Solver, dyn_data::
     #############
 
     # latent heat feedback to temperature tendency 
-    day_to_sec        = 86400.
+    # day_to_sec        = 86400.
     # L                 = 0.05
     # @info "L:", L
     factor3          .= grid_tracers_diff
