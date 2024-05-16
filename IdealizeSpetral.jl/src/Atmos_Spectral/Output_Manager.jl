@@ -131,7 +131,7 @@ function Output_Manager(mesh::Spectral_Spherical_Mesh, vert_coord::Vert_Coordina
     bk = vert_coord.bk
     σc = (bk[2:nd+1] + bk[1:nd])/2.0
   
-    n_day = Int64((end_time - start_time)/day_to_sec)
+    n_day = Int64((end_time - start_time)/ (day_to_sec/4) )
     n_daily_mean = zeros(Float64, n_day)
 
     grid_geopots_xyzt = zeros(Float64, nλ, nθ, 1, n_day)
@@ -322,8 +322,8 @@ function Update_Output!(output_manager::Output_Manager, dyn_data::Dyn_Data, curr
     
     
     
-
-    i_day = Int(div(current_time - start_time - 1, day_to_sec) + 1)
+    
+    i_day = Int(div(current_time - start_time - 1, day_to_sec/4) + 1)
 
     if(i_day > n_day)
         @info "Warning: i_day > n_day in Output_Manager:Update!"
