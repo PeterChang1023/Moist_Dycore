@@ -969,7 +969,7 @@ function HS_forcing_water_vapor!(semi_implicit::Semi_Implicit_Solver, dyn_data::
     # @info "max: ", maximum(diabatic_heating)
     
     grid_δt         .= (grid_tracers_diff .* Lv ./ cp) .* L 
-    @info "L=", L
+    # @info "L=", L
     
     # grid_t         .+= (grid_tracers_diff .* Lv ./ cp) .* L 
 
