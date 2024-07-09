@@ -946,6 +946,20 @@ function HS_forcing_water_vapor!(semi_implicit::Semi_Implicit_Solver, dyn_data::
     #grid_tracers_c_max     = deepcopy(grid_tracers_c)
     grid_tracers_c_max    .= (0.622 .* (611.12 .* exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ grid_t)) )) ./ (grid_p_full .- 0.378 .* (611.12 .* exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ grid_t)) )) 
 
+    ############################################################################ 
+    # Tiffany 
+    # exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ grid_t)) )
+    # After differ exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ grid_t)) * Lv ./ Rv * (1. ./ grid_t.^2) 
+    # f(x+dx) = f(x) + dx * f'(x) + dx^2/2! * f''(x) + dx^3/3! * f'''(x) 
+    # pluge in: # T_ref(x,y,z) 
+    # f(T_ref+dT) = f(T_ref) + dT * f'(T_ref) + dT^2/2! * f''(T_ref) + dT^3/3! * f'''(T_ref)
+    # exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ dT+T_ref)) ) = exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ T_ref)) ) + dT * exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ T_ref)) * Lv ./ Rv * (1. ./ T_ref.^2) 
+    # because dT = grid_t - T_ref
+    # exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ dT+T_ref)) ) = exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ T_ref)) ) + (grid_t - T_ref) * exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ T_ref)) * Lv ./ Rv * (1. ./ T_ref.^2)
+    # exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ dT+T_ref)) ) = exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ T_ref)) ) + (grid_t - T_ref) * C (unchange with time)
+    ############################################################################
+    
+
     dq_sat_dT              = zeros(size(grid_tracers_c)...)
     dq_sat_dT             .= Lv.*grid_tracers_c_max./ (Rv .*grid_t.^2)
     #@info "max: ", maximum(dq_sat_dT)
