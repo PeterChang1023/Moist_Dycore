@@ -493,7 +493,7 @@ function Get_Topography!(grid_geopots::Array{Float64, 3}, warm_start_file_name::
     return
 end 
 
-function Spectral_Initialize_Fields!(mesh::Spectral_Spherical_Mesh, atmo_data::Atmo_Data, vert_coord::Vert_Coordinate, sea_level_ps_ref::Float64, init_t::Float64, grid_geopots::Array{Float64,3}, dyn_data::Dyn_Data, Δt::Int64, warm_start_file_name::String = "None", initial_day::Int64 = 5)
+function Spectral_Initialize_Fields!(mesh::Spectral_Spherical_Mesh, atmo_data::Atmo_Data, vert_coord::Vert_Coordinate, sea_level_ps_ref::Float64, init_t::Float64, grid_geopots::Array{Float64,3}, T_ref::Array{Float64, 3}, dyn_data::Dyn_Data, Δt::Int64, warm_start_file_name::String = "None", initial_day::Int64 = 5)
     # load_old_file  = false
     # original_start = true
     if warm_start_file_name != "None" # load warm start file
@@ -605,6 +605,8 @@ function Spectral_Initialize_Fields!(mesh::Spectral_Spherical_Mesh, atmo_data::A
 
         rdgas = atmo_data.rdgas
         grid_t         .=  init_t 
+
+        T_ref = dyn_data.T_ref
 
         # 𝚪 = 0.005
         # a = 6.371E6
@@ -724,13 +726,25 @@ function Spectral_Initialize_Fields!(mesh::Spectral_Spherical_Mesh, atmo_data::A
         grid_tracers_p .= grid_tracers_c
         spe_tracers_p  .= spe_tracers_c
     end
-      
+    
+    ######################################
+    # Tiffany project
+    Tiffany_project = false
+    
+    if Tiffany_project == true
+        T_ref_file_name = "PR0_last_10000step_time_mean_t.h5"
+        read_file     = load(T_ref_file_name) 
+        T_ref        .= read_file["t"][:,:,:]
+        @info "Tiffany project: True"
+    end
+    @info "Tiffany project: False"
+    ######################################
 
      
 end 
 
 
-function Spectral_Dynamics_Physics!(semi_implicit::Semi_Implicit_Solver, atmo_data::Atmo_Data, mesh::Spectral_Spherical_Mesh, dyn_data::Dyn_Data, Δt::Int64, physics_params::Dict{String, Float64}, L::Float64)
+function Spectral_Dynamics_Physics!(semi_implicit::Semi_Implicit_Solver, atmo_data::Atmo_Data, mesh::Spectral_Spherical_Mesh, dyn_data::Dyn_Data, Δt::Int64, physics_params::Dict{String, Float64}, L::Float64, T_ref::Array{Float64, 3})
     grid_δu, grid_δv, grid_δps, grid_δt = dyn_data.grid_δu, dyn_data.grid_δv, dyn_data.grid_δps, dyn_data.grid_δt
     grid_u_p, grid_v_p,  grid_t_p       = dyn_data.grid_u_p, dyn_data.grid_v_p, dyn_data.grid_t_p
     grid_p_half, grid_p_full            = dyn_data.grid_p_half, dyn_data.grid_p_full
@@ -856,7 +870,7 @@ function Spectral_Dynamics_Physics!(semi_implicit::Semi_Implicit_Solver, atmo_da
     do_Implicit_PBL_Scheme       = true
     
     if do_large_scale_precipitation == true
-        HS_forcing_water_vapor!(semi_implicit, dyn_data, grid_tracers_n,  grid_t_n, grid_δt, grid_p_full, grid_u, grid_v, grid_δtracers, grid_tracers_c, grid_t, grid_tracers_diff, factor3, L)
+        HS_forcing_water_vapor!(semi_implicit, dyn_data, grid_tracers_n,  grid_t_n, grid_δt, grid_p_full, grid_u, grid_v, grid_δtracers, grid_tracers_c, grid_t, grid_tracers_diff, factor3, L, T_ref)
         grid_tracers_c[grid_tracers_c .< 0]   .= 0     
     
         
@@ -908,11 +922,10 @@ function Spectral_Dynamics_Physics!(semi_implicit::Semi_Implicit_Solver, atmo_da
 end
 
 
-function Atmosphere_Update!(mesh::Spectral_Spherical_Mesh, atmo_data::Atmo_Data, vert_coord::Vert_Coordinate, semi_implicit::Semi_Implicit_Solver, 
-                            dyn_data::Dyn_Data, physcis_params::Dict{String, Float64}, L::Float64)
+function Atmosphere_Update!(mesh::Spectral_Spherical_Mesh, atmo_data::Atmo_Data, vert_coord::Vert_Coordinate, semi_implicit::Semi_Implicit_Solver, dyn_data::Dyn_Data, physcis_params::Dict{String, Float64}, L::Float64, T_ref::Array{Float64, 3})
 
     Δt = Get_Δt(semi_implicit.integrator)
-    Spectral_Dynamics_Physics!(semi_implicit, atmo_data, mesh,  dyn_data, Δt, physcis_params, L) # HS forcing
+    Spectral_Dynamics_Physics!(semi_implicit, atmo_data, mesh,  dyn_data, Δt, physcis_params, L, T_ref) # HS forcing
     Spectral_Dynamics!(mesh,  vert_coord , atmo_data, dyn_data, semi_implicit, L) # dynamics 
     ### original
     grid_ps , grid_Δp, grid_p_half, grid_lnp_half, grid_p_full, grid_lnp_full = dyn_data.grid_ps_c,  dyn_data.grid_Δp, dyn_data.grid_p_half, dyn_data.grid_lnp_half, dyn_data.grid_p_full, dyn_data.grid_lnp_full 
@@ -931,7 +944,7 @@ function Atmosphere_Update!(mesh::Spectral_Spherical_Mesh, atmo_data::Atmo_Data,
 end 
 
 
-function HS_forcing_water_vapor!(semi_implicit::Semi_Implicit_Solver, dyn_data::Dyn_Data, grid_tracers_n::Array{Float64, 3},  grid_t_n::Array{Float64, 3}, grid_δt::Array{Float64, 3}, grid_p_full::Array{Float64, 3}, grid_u::Array{Float64, 3},  grid_v::Array{Float64, 3}, grid_δtracers::Array{Float64, 3}, grid_tracers_c::Array{Float64, 3}, grid_t::Array{Float64, 3}, grid_tracers_diff::Array{Float64, 3}, factor3::Array{Float64, 3}, L::Float64)
+function HS_forcing_water_vapor!(semi_implicit::Semi_Implicit_Solver, dyn_data::Dyn_Data, grid_tracers_n::Array{Float64, 3},  grid_t_n::Array{Float64, 3}, grid_δt::Array{Float64, 3}, grid_p_full::Array{Float64, 3}, grid_u::Array{Float64, 3},  grid_v::Array{Float64, 3}, grid_δtracers::Array{Float64, 3}, grid_tracers_c::Array{Float64, 3}, grid_t::Array{Float64, 3}, grid_tracers_diff::Array{Float64, 3}, factor3::Array{Float64, 3}, L::Float64, T_ref::Array{Float64, 3})
 
     integrator = semi_implicit.integrator
     Δt         = Get_Δt(integrator)
@@ -939,11 +952,9 @@ function HS_forcing_water_vapor!(semi_implicit::Semi_Implicit_Solver, dyn_data::
     Lv         = 2.5*10^6.
     Rd         = 287.04
     Rv         = 461.
-    # C_E = 0.0044
-    # grid_tracers_diff      = zeros(size(grid_tracers_c)...)
-    grid_tracers_c_max     = zeros(size(grid_tracers_c)...)
-    
-    #grid_tracers_c_max     = deepcopy(grid_tracers_c)
+
+    # Origin
+    grid_tracers_c_max     = zeros(size(grid_tracers_c)...)    
     grid_tracers_c_max    .= (0.622 .* (611.12 .* exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ grid_t)) )) ./ (grid_p_full .- 0.378 .* (611.12 .* exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ grid_t)) )) 
 
     ############################################################################ 
@@ -957,6 +968,21 @@ function HS_forcing_water_vapor!(semi_implicit::Semi_Implicit_Solver, dyn_data::
     # because dT = grid_t - T_ref
     # exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ dT+T_ref)) ) = exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ T_ref)) ) + (grid_t - T_ref) * exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ T_ref)) * Lv ./ Rv * (1. ./ T_ref.^2)
     # exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ dT+T_ref)) ) = exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ T_ref)) ) + (grid_t - T_ref) * C (unchange with time)
+
+    # @info maximum(T_ref), minimum(T_ref)
+    
+    Constant  = zeros(size(grid_tracers_c)...)  
+    Constant .= exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ T_ref)) .* Lv ./ Rv .* (1. ./ T_ref.^2)
+    # @info maximum(Constant)
+    
+
+    dTmax_CCdt  = zeros(size(grid_tracers_c)...)  
+    dTmax_CCdt .= exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ T_ref))  .+ (grid_t .- T_ref) .* Constant
+    # @info maximum(dTmax_CCdt)
+    
+
+    # Tiffany final grid_tracers_c_max
+    # grid_tracers_c_max  .= (0.622 .* (611.12 .* dTmax_CCdt) ./ (grid_p_full))#.- 0.378 .* (611.12 .* dTmax_CCdt ))) 
     ############################################################################
     
 
@@ -983,7 +1009,7 @@ function HS_forcing_water_vapor!(semi_implicit::Semi_Implicit_Solver, dyn_data::
     # @info "max: ", maximum(diabatic_heating)
     
     grid_δt         .= (grid_tracers_diff .* Lv ./ cp) .* L 
-    @info "L=", L
+    # @info "L=", L
     
     # grid_t         .+= (grid_tracers_diff .* Lv ./ cp) .* L 
 

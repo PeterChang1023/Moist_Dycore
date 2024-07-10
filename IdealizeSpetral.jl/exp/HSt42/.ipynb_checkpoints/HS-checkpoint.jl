@@ -72,19 +72,18 @@ function Atmos_Spectral_Dynamics_Main(physcis_params::Dict{String, Float64}, end
     
     Get_Topography!(dyn_data.grid_geopots, warm_start_file_name, initial_day)
     
-    Spectral_Initialize_Fields!(mesh, atmo_data, vert_coord, sea_level_ps_ref, init_t, dyn_data.grid_geopots, dyn_data, Δt, warm_start_file_name, initial_day)
+    Spectral_Initialize_Fields!(mesh, atmo_data, vert_coord, sea_level_ps_ref, init_t, dyn_data.grid_geopots, dyn_data.T_ref, dyn_data, Δt, warm_start_file_name, initial_day)
     
     
-    Atmosphere_Update!(mesh, atmo_data, vert_coord, semi_implicit, dyn_data, physcis_params, L)
+    Atmosphere_Update!(mesh, atmo_data, vert_coord, semi_implicit, dyn_data, physcis_params, L, dyn_data.T_ref)
     Update_Init_Step!(semi_implicit)
     integrator.time += Δt
     Update_Output!(op_man, dyn_data, integrator.time)
     
     
-    
     for i = 2:NT
 
-        Atmosphere_Update!(mesh, atmo_data, vert_coord, semi_implicit, dyn_data, physcis_params, L)
+        Atmosphere_Update!(mesh, atmo_data, vert_coord, semi_implicit, dyn_data, physcis_params, L, dyn_data.T_ref)
         integrator.time += Δt
         #@info integrator.time
 
