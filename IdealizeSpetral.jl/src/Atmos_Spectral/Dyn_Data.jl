@@ -192,8 +192,9 @@ mutable struct Dyn_Data
     # qv_global_intergral::Array{Float64, 3}
     convection::Array{Float64,3}
 
-
-
+    #######################################
+    # Tiffany_project
+    T_ref::Array{Float64,3}
     
 end
 
@@ -367,6 +368,9 @@ function Dyn_Data(name::String, num_fourier::Int64, num_spherical::Int64, nλ::I
     # qv_global_intergral = zeros(Float64, nλ,  nθ, nd)
     convection = zeros(Float64, nλ,  nθ, nd)
 
+    # Tiffany_project
+    T_ref = zeros(Float64, nλ,  nθ, nd)
+
 
 
 
@@ -400,7 +404,7 @@ function Dyn_Data(name::String, num_fourier::Int64, num_spherical::Int64, nλ::I
     grid_z_full, grid_z_half,grid_t_eq,
     #########################################################################
     spe_d1, spe_d2, grid_d_full1, grid_d_full2, grid_d_half1, grid_d_half2,
-    factor1, factor2, factor3, factor4, K_E, convection)
+    factor1, factor2, factor3, factor4, K_E, convection, T_ref)
 end
 
 function Time_Advance!(dyn_data::Dyn_Data)
