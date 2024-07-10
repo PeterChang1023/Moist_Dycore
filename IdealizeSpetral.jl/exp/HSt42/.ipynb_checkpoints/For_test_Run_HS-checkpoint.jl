@@ -7,7 +7,7 @@ end_day = 2
 spinup_day = 0
 
 L = 0 / 100
-warm_start_file_name =  "warmstart_0.dat"# "None"
+warm_start_file_name =  "None" # "warmstart_0.dat"# 
 
 initial_day = 0 # warm start day
 

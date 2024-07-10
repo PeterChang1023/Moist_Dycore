@@ -729,15 +729,16 @@ function Spectral_Initialize_Fields!(mesh::Spectral_Spherical_Mesh, atmo_data::A
     
     ######################################
     # Tiffany project
-    Tiffany_project = false
+    Tiffany_project = true
     
     if Tiffany_project == true
         T_ref_file_name = "PR0_last_10000step_time_mean_t.h5"
         read_file     = load(T_ref_file_name) 
         T_ref        .= read_file["t"][:,:,:]
         @info "Tiffany project: True"
+    else
+        @info "Tiffany project: False"
     end
-    @info "Tiffany project: False"
     ######################################
 
      
@@ -954,7 +955,7 @@ function HS_forcing_water_vapor!(semi_implicit::Semi_Implicit_Solver, dyn_data::
     Rv         = 461.
 
     # Origin
-    grid_tracers_c_max     = zeros(size(grid_tracers_c)...)    
+    grid_tracers_c_max     = dyn_data.grid_tracers_c_max # zeros(size(grid_tracers_c)...)    
     grid_tracers_c_max    .= (0.622 .* (611.12 .* exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ grid_t)) )) ./ (grid_p_full .- 0.378 .* (611.12 .* exp.(Lv ./ Rv .* (1. ./ 273.15 .- 1. ./ grid_t)) )) 
 
     ############################################################################ 
@@ -982,7 +983,10 @@ function HS_forcing_water_vapor!(semi_implicit::Semi_Implicit_Solver, dyn_data::
     
 
     # Tiffany final grid_tracers_c_max
-    # grid_tracers_c_max  .= (0.622 .* (611.12 .* dTmax_CCdt) ./ (grid_p_full))#.- 0.378 .* (611.12 .* dTmax_CCdt ))) 
+    grid_tracers_c_max_Tiffany   = dyn_data.grid_tracers_c_max_Tiffany # zeros(size(grid_tracers_c)...)
+    grid_tracers_c_max_Tiffany  .= (0.622 .* (611.12 .* dTmax_CCdt) ./ (grid_p_full))#.- 0.378 .* (611.12 .* dTmax_CCdt ))) 
+    # @info maximum(grid_tracers_c_max_Tiffany), minimum(grid_tracers_c_max_Tiffany)
+    
     ############################################################################
     
 
