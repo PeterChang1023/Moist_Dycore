@@ -31,7 +31,7 @@ class Dycore:
         
         
         self.qv_diff = self.getVar("grid_tracers_diff_xyzt")
-        self.w = self.getVar("grid_w_full_xyzt")
+        self.w       = self.getVar("grid_w_full_xyzt")
         
         # self.factor1 = self.getVar("factor1_xyzt")
         # self.factor2 = self.getVar("factor2_xyzt")
@@ -40,6 +40,8 @@ class Dycore:
 
 
         # self.convection = self.getVar("convection_xyzt")
+        self.grid_tracers_c_max_xyzt         = self.getVar("grid_tracers_c_max_xyzt")
+        self.grid_tracers_c_max_Tiffany_xyzt = self.getVar("grid_tracers_c_max_Tiffany_xyzt")
         
         
         ### the variables for plot
