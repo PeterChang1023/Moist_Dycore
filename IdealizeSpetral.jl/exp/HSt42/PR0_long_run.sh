@@ -15,6 +15,9 @@ echo -n $L > Latent_heat.txt
 if [ $i -eq 0 ]; then
 	rm -rf HSt42_${L}
 	mkdir HSt42_${L}
+
+    rm -rf warmstart_cp_HSt42_${L}
+    mkdir warmstart_cp_HSt42_${L}
 	echo -n $space_day > HSt42_${L}/day_interval.txt
 	echo -n "None" > HSt42_${L}/firstday_file.txt
 else
@@ -34,10 +37,12 @@ L=0 # To make sure that it wouldn't run the wrong L !!!
 
 if [ -f "HSt42_${L}/warmstart_${L}.dat" ] && [ $i -lt $final_day ]; then
 	cp "HSt42_"${L}"/warmstart_${L}.dat" "warmstart_${L}.dat"
+	cp "HSt42_"${L}"/warmstart_${L}.dat" "warmstart_cp_HSt42_${L}/warmstart_${L}_$(($i+$space_day))th_day.dat"
 	mv "HSt42_"${L}"/all_L"${L}".dat" "HSt42_"${L}"/RH80_PR"$L"_"$final_day"day_startfrom_"$i"day_final.dat"
 	echo 'warmstart file exists.'
 elif [ -f "HSt42_${L}/warmstart_${L}.dat" ] && [ $i -eq $final_day ]; then
 	mv "HSt42_"${L}"/all_L"${L}".dat" "HSt42_"${L}"/RH80_PR"$L"_"$final_day"day_startfrom_"$i"day_final.dat"
+	cp "HSt42_"${L}"/warmstart_${L}.dat" "warmstart_cp_HSt42_${L}/warmstart_${L}_$(($i+$space_day))th_day.dat"
 	mv "HSt42_"${L}"/warmstart_${L}.dat" "HSt42_"${L}"/HSt42_"${L}"RH80_PR"$L"_"$final_day"day_startfrom_"$i"day_final.dat"
 	echo "All files have completed!!!"
 fi
