@@ -30,6 +30,15 @@ class Zonal_Calculation:
     def zonal_mean(self, data):
         return np.mean(data, axis=self.idx, keepdims=True)
 
+    def time_mean(self, data):
+        return np.mean(data, axis=0, keepdims=True)
+
+    def mean_exclude_latitude(self, data):
+        return np.nanmean(data, axis=(0, 1, 3))
+
+    def mean_exclude_latitude_for_prec(self, data):
+        return np.sum(np.mean(data, axis=(1, 3)))
+
     def zonal_anomaly(self, data):
         mean = self.zonal_mean(data)
         np.subtract(data, mean, out=data)  # In-place subtraction
