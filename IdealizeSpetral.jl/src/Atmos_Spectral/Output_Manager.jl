@@ -17,10 +17,7 @@ mutable struct Output_Manager
     θc::Array{Float64, 1}
     σc::Array{Float64, 1}
 
-    n_daily_mean::Array{Float64, 1}
-    
-    
-    ### By CJY
+    n_daily_mean::Array{Float64, 1}    
     ##########################################################################
     # specral vor 
     spe_vor_c_xyzt::Array{ComplexF64,4}
@@ -84,16 +81,10 @@ mutable struct Output_Manager
     
     # Memory contrainer for temporal variables
     # vor
-    # spe_δvor_xyzt::Array{ComplexF64,4}
     grid_vor_xyzt::Array{Float64,4}
-    # grid_δvor_xyzt::Array{Float64,4}
     
-
     # div
-    # spe_δdiv_xyzt::Array{ComplexF64,4}
     grid_div_xyzt::Array{Float64,4}
-    # grid_δdiv_xyzt::Array{Float64,4}
-    
 
     # w-e velocity tendency
     grid_δu_xyzt::Array{Float64,4}
@@ -102,10 +93,6 @@ mutable struct Output_Manager
     grid_δv_xyzt::Array{Float64,4}
     #######################################################################
     # equilibrium temperature in HS_Forcing
-    # grid_t_eq_xyzt::Array{Float64,4}
-    
-    # grid_dλ_ps_xyzt::Array{Float64,4}
-    # grid_dθ_ps_xyzt::Array{Float64,4}
     convection_xyzt::Array{Float64,4}
 
     grid_z_full_xyzt::Array{Float64,4}
@@ -216,10 +203,6 @@ function Output_Manager(mesh::Spectral_Spherical_Mesh, vert_coord::Vert_Coordina
     grid_δu_xyzt  = zeros(Float64, nλ,  nθ, nd, n_day) 
     grid_δv_xyzt  = zeros(Float64, nλ,  nθ, nd, n_day) 
 
-    # grid_t_eq_xyzt = zeros(Float64, nλ,  nθ, nd, n_day) 
-
-    # grid_dλ_ps_xyzt = zeros(Float64, nλ,  nθ, nd, n_day) 
-    # grid_dθ_ps_xyzt = zeros(Float64, nλ,  nθ, nd, n_day) 
     convection_xyzt = zeros(Float64, nλ,  nθ, nd, n_day)
 
     grid_z_full_xyzt = zeros(Float64, nλ,  nθ, nd, n_day)
@@ -244,7 +227,6 @@ function Update_Output!(output_manager::Output_Manager, dyn_data::Dyn_Data, curr
     day_to_sec, start_time, n_day = output_manager.day_to_sec, output_manager.start_time, output_manager.n_day
 
     n_daily_mean = output_manager.n_daily_mean
-    ### By CJY
     ############################################################
     # specral vor 
     spe_vor_c_xyzt  = output_manager.spe_vor_c_xyzt
@@ -307,24 +289,14 @@ function Update_Output!(output_manager::Output_Manager, dyn_data::Dyn_Data, curr
     # geopotential
     grid_geopots_xyzt = output_manager.grid_geopots_xyzt
     ############################################################
-    # spe_δvor_xyzt  = output_manager.spe_δvor_xyzt
     grid_vor_xyzt  = output_manager.grid_vor_xyzt
-    # grid_δvor_xyzt = output_manager.grid_δvor_xyzt
     
-    
-    # spe_δdiv_xyzt  = output_manager.spe_δdiv_xyzt
     grid_div_xyzt  = output_manager.grid_div_xyzt
-    # grid_δdiv_xyzt = output_manager.grid_δdiv_xyzt
     
-
     # Tendency
     grid_δu_xyzt   = output_manager.grid_δu_xyzt
     grid_δv_xyzt   = output_manager.grid_δv_xyzt
 
-    # grid_t_eq_xyzt = output_manager.grid_t_eq_xyzt
-
-    # grid_dλ_ps_xyzt = output_manager.grid_dλ_ps_xyzt
-    # grid_dθ_ps_xyzt = output_manager.grid_dθ_ps_xyzt
     convection_xyzt = output_manager.convection_xyzt
 
     grid_z_full_xyzt = output_manager.grid_z_full_xyzt
@@ -333,10 +305,6 @@ function Update_Output!(output_manager::Output_Manager, dyn_data::Dyn_Data, curr
     grid_tracers_c_max_Tiffany_xyzt = output_manager.grid_tracers_c_max_Tiffany_xyzt
     grid_tracers_c_max_xyzt = output_manager.grid_tracers_c_max_xyzt
     
-    
-    
-    
-    
     i_day = Int(div(current_time - start_time - 1, day_to_sec/4) + 1)
 
     if(i_day > n_day)
@@ -344,7 +312,6 @@ function Update_Output!(output_manager::Output_Manager, dyn_data::Dyn_Data, curr
         return 
     end
     
-    ### By CJY
     ############################################################
     # specral vor 
     spe_vor_c_xyzt[:,:,:,i_day] .= dyn_data.spe_vor_c[:,:,:]
@@ -407,24 +374,13 @@ function Update_Output!(output_manager::Output_Manager, dyn_data::Dyn_Data, curr
     # geopotential
     grid_geopots_xyzt[:,:,:,i_day] .= dyn_data.grid_geopots[:,:,:]
     ############################################################
-    # spe_δvor_xyzt[:,:,:,i_day]  .= dyn_data.spe_δvor[:,:,:]
     grid_vor_xyzt[:,:,:,i_day]  .= dyn_data.grid_vor[:,:,:]
-    # grid_δvor_xyzt[:,:,:,i_day] .= dyn_data.grid_δvor[:,:,:]
-    
-    
-    # spe_δdiv_xyzt[:,:,:,i_day]  .= dyn_data.spe_δdiv[:,:,:]
     grid_div_xyzt[:,:,:,i_day]  .= dyn_data.grid_div[:,:,:]
-    # grid_δdiv_xyzt[:,:,:,i_day] .= dyn_data.grid_δvor[:,:,:]
     
-
     # Tendency
     grid_δu_xyzt[:,:,:,i_day]   .= dyn_data.grid_δu[:,:,:]
     grid_δv_xyzt[:,:,:,i_day]   .= dyn_data.grid_δv[:,:,:]
 
-    # grid_t_eq_xyzt[:,:,:,i_day] .= dyn_data.grid_t_eq[:,:,:]
-
-    # grid_dλ_ps_xyzt[:,:,:,i_day] .= dyn_data.grid_dλ_ps[:,:,:]
-    # grid_dθ_ps_xyzt[:,:,:,i_day] .= dyn_data.grid_dθ_ps[:,:,:]
     convection_xyzt[:,:,:,i_day] .= dyn_data.convection[:,:,:]
 
     grid_z_full_xyzt[:,:,:,i_day] .= dyn_data.grid_z_full[:,:,:]
@@ -441,7 +397,6 @@ function Finalize_Output!(output_manager::Output_Manager, save_file_name::String
 
     n_day = output_manager.n_day
 
-    ### By CJY
     ############################################################    
     # specral vor 
     spe_vor_c_xyzt  = output_manager.spe_vor_c_xyzt
@@ -504,23 +459,13 @@ function Finalize_Output!(output_manager::Output_Manager, save_file_name::String
     # geopotential
     grid_geopots_xyzt = output_manager.grid_geopots_xyzt
     ############################################################
-    # spe_δvor_xyzt  = output_manager.spe_δvor_xyzt
     grid_vor_xyzt  = output_manager.grid_vor_xyzt    
-    # grid_δvor_xyzt = output_manager.grid_δvor_xyzt
-
-    # spe_δdiv_xyzt  = output_manager.spe_δdiv_xyzt
     grid_div_xyzt  = output_manager.grid_div_xyzt
-    # grid_δdiv_xyzt = output_manager.grid_δdiv_xyzt
-    
     
     # Tendency
     grid_δu_xyzt   = output_manager.grid_δu_xyzt
     grid_δv_xyzt   = output_manager.grid_δv_xyzt
 
-    # grid_t_eq_xyzt = output_manager.grid_t_eq_xyzt
-
-    # grid_dλ_ps_xyzt = output_manager.grid_dλ_ps_xyzt
-    # grid_dθ_ps_xyzt = output_manager.grid_dθ_ps_xyzt
     convection_xyzt = output_manager.convection_xyzt
 
     grid_z_full_xyzt = output_manager.grid_z_full_xyzt
