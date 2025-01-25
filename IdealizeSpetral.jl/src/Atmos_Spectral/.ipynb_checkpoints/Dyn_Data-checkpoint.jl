@@ -151,45 +151,20 @@ mutable struct Dyn_Data
     ## wrapper
     spe_d1::Array{ComplexF64,3}
     spe_d2::Array{ComplexF64,3}
-    #
+
     grid_d_full1::Array{Float64,3}
     grid_d_full2::Array{Float64,3}
-    #
+
     grid_d_half1::Array{Float64,3}
     grid_d_half2::Array{Float64,3}
     
-    # spe_zeros::Array{ComplexF64,3}
-    
-    ### 10/31
-    # grid_t_eq_ref::Array{Float64,3}
-    # grid_tracers_ref::Array{Float64,3}
-    
-    # spe_tracers_q_n::Array{ComplexF64,3}
-    # spe_tracers_q_c::Array{ComplexF64,3}
-    # spe_tracers_q_p::Array{ComplexF64,3}
-    
-    # spe_tracers_ref::Array{ComplexF64,3}
-
-    ### 11/07
-    # unsaturated_n::Array{Float64,3}
-
-    ### 11/10
-    # add_water::Array{Float64,3}
-
-    ### 11/12
     factor1::Array{Float64,3}
     factor2::Array{Float64,3}
     factor3::Array{Float64,3}
     factor4::Array{Float64,3}
 
-
-
     K_E::Array{Float64,3}
-    # pqpz::Array{Float64,3}
-    
-    # rho::Array{Float64,3}
 
-    # qv_global_intergral::Array{Float64, 3}
     convection::Array{Float64,3}
 
     #######################################
@@ -197,16 +172,14 @@ mutable struct Dyn_Data
     T_ref::Array{Float64,3}
     grid_tracers_c_max_Tiffany::Array{Float64,3}
     grid_tracers_c_max::Array{Float64,3}
-    
+    #######################################
 end
 
-function Dyn_Data(name::String, num_fourier::Int64, num_spherical::Int64, nλ::Int64, nθ::Int64, nd::Int64, 
-                  num_grid_tracters::Int64=1, num_spe_tracters::Int64=1)
+function Dyn_Data(name::String, num_fourier::Int64, num_spherical::Int64, nλ::Int64, nθ::Int64, nd::Int64, num_grid_tracters::Int64=1, num_spe_tracters::Int64=1)
     # specral vor 
     spe_vor_n = zeros(ComplexF64, num_fourier+1, num_spherical+1, nd)
     spe_vor_c = zeros(ComplexF64, num_fourier+1, num_spherical+1, nd)
     spe_vor_p = zeros(ComplexF64, num_fourier+1, num_spherical+1, nd)
-    
     
     # spectral div
     spe_div_n = zeros(ComplexF64, num_fourier+1, num_spherical+1, nd)
@@ -227,9 +200,7 @@ function Dyn_Data(name::String, num_fourier::Int64, num_spherical::Int64, nλ::I
     spe_tracers_n = zeros(ComplexF64, num_fourier+1, num_spherical+1, nd)
     spe_tracers_c = zeros(ComplexF64, num_fourier+1, num_spherical+1, nd)
     spe_tracers_p = zeros(ComplexF64, num_fourier+1, num_spherical+1, nd)
-    
     #########################################################
-
     # grid w-e velocity
     grid_u_n = zeros(Float64, nλ,  nθ, nd)
     grid_u_c = zeros(Float64, nλ,  nθ, nd)
@@ -256,18 +227,14 @@ function Dyn_Data(name::String, num_fourier::Int64, num_spherical::Int64, nλ::I
     grid_tracers_p = zeros(Float64, nλ,  nθ, nd)
     
     grid_tracers_diff = zeros(Float64, nλ,  nθ, nd)
-    
-    ## By CJY3
     grid_tracers_full = zeros(Float64, nλ,  nθ, nd)
     ############################################################
     # Memory contrainer for temporal variables
-
     # vor
     spe_δvor = zeros(ComplexF64, num_fourier+1, num_spherical+1, nd)
     grid_vor = zeros(Float64, nλ,  nθ, nd)
     grid_δvor = zeros(Float64, nλ,  nθ, nd)
     
-
     # div
     spe_δdiv = zeros(ComplexF64, num_fourier+1, num_spherical+1, nd)
     grid_div = zeros(Float64, nλ,  nθ, nd)
@@ -281,7 +248,6 @@ function Dyn_Data(name::String, num_fourier::Int64, num_spherical::Int64, nλ::I
     spec_δv = zeros(ComplexF64, num_fourier+1, num_spherical+1, nd)
     grid_δv = zeros(Float64, nλ,  nθ, nd)
 
-    
     # pressure     
     spe_δlnps = zeros(ComplexF64, num_fourier+1, num_spherical+1, 1)
     grid_lnps = zeros(Float64, nλ,  nθ, 1)
@@ -318,7 +284,7 @@ function Dyn_Data(name::String, num_fourier::Int64, num_spherical::Int64, nλ::I
     grid_energy_full = zeros(Float64, nλ,  nθ, nd)
     
     # geopotential 
-    grid_geopots = zeros(Float64, nλ,  nθ, 1) #surface geopotential
+    grid_geopots = zeros(Float64, nλ,  nθ, 1) # surface geopotential
     grid_geopot_full = zeros(Float64, nλ,  nθ, nd)
     grid_geopot_half = zeros(Float64, nλ,  nθ, nd+1)
 
@@ -331,29 +297,12 @@ function Dyn_Data(name::String, num_fourier::Int64, num_spherical::Int64, nλ::I
     ## wrapper
     spe_d1 = zeros(ComplexF64, num_fourier+1, num_spherical+1, nd)
     spe_d2 = zeros(ComplexF64, num_fourier+1, num_spherical+1, nd)
-    #
+
     grid_d_full1 = zeros(Float64, nλ,  nθ, nd)
     grid_d_full2 = zeros(Float64, nλ,  nθ, nd)
-    #
+
     grid_d_half1 = zeros(Float64, nλ,  nθ, nd+1)
     grid_d_half2 = zeros(Float64, nλ,  nθ, nd+1)
-    
-
-    # spe_zeros = zeros(ComplexF64, num_fourier+1, num_spherical+1, nd)
-    
-    ### 10/31
-    # grid_t_eq_ref   = zeros(Float64, nλ,  nθ, nd)
-    # grid_tracers_ref = zeros(Float64, nλ,  nθ, nd)
-    
-    # spe_tracers_q_n = zeros(ComplexF64, num_fourier+1, num_spherical+1, nd)
-    # spe_tracers_q_c = zeros(ComplexF64, num_fourier+1, num_spherical+1, nd)
-    # spe_tracers_q_p = zeros(ComplexF64, num_fourier+1, num_spherical+1, nd)
-    
-    # spe_tracers_ref = zeros(ComplexF64, num_fourier+1, num_spherical+1, nd)
-    ### 11/07
-    # unsaturated_n = zeros(Float64, nλ,  nθ, nd)
-
-    # add_water = zeros(Float64, nλ,  nθ, nd)
 
     factor1 = zeros(Float64, nλ,  nθ, nd)
     factor2 = zeros(Float64, nλ,  nθ, nd)
@@ -361,9 +310,7 @@ function Dyn_Data(name::String, num_fourier::Int64, num_spherical::Int64, nλ::I
     factor4 = zeros(Float64, nλ,  nθ, nd)
 
 
-
     K_E = zeros(Float64, nλ,  nθ, nd+1)
-    # pqpz = zeros(Float64, nλ,  nθ, nd)
 
     rho = zeros(Float64, nλ,  nθ, nd)
 
@@ -376,10 +323,6 @@ function Dyn_Data(name::String, num_fourier::Int64, num_spherical::Int64, nλ::I
     grid_tracers_c_max         = zeros(Float64, nλ,  nθ, nd)
 
 
-
-
-    
-    
     Dyn_Data(name, num_fourier, num_spherical, nλ, nθ, nd, num_grid_tracters, num_spe_tracters,
     spe_vor_n, spe_vor_c, spe_vor_p, 
     spe_div_n, spe_div_c, spe_div_p, 
