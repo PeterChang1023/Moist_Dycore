@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -158,3 +159,64 @@ cython_debug/
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
+=======
+*.dat
+IdealizeSpetr
+IdealizeSpetral.jl/exp/HSt42/0710.txt
+IdealizeSpetral.jl/exp/HSt42/1014_plotting.ipynb
+IdealizeSpetral.jl/exp/HSt42/112-2 Climate Change and Extreme Events - Deep Learning Applications /
+IdealizeSpetral.jl/exp/HSt42/113-1Seminar_fig/
+IdealizeSpetral.jl/exp/HSt42/6hourly_to_h5_t.ipynb
+IdealizeSpetral.jl/exp/HSt42/6hourly_to_h5_u.ipynb
+IdealizeSpetral.jl/exp/HSt42/6hourly_to_h5_v.ipynb
+IdealizeSpetral.jl/exp/HSt42/6hourly_uv_prime_EMF/
+IdealizeSpetral.jl/exp/HSt42/EP Flux Difference Between Lag Ranges 90 100.png
+IdealizeSpetral.jl/exp/HSt42/EP Flux Original Between Lag Ranges 90 100.png
+IdealizeSpetral.jl/exp/HSt42/EP flux PR0 difference.png
+IdealizeSpetral.jl/exp/HSt42/EP flux original.png
+IdealizeSpetral.jl/exp/HSt42/EP flux previous PR difference.png
+IdealizeSpetral.jl/exp/HSt42/EP_flux_all_time_results/
+IdealizeSpetral.jl/exp/HSt42/EP_flux_difference_between_lags.png
+IdealizeSpetral.jl/exp/HSt42/EP_flux_mean_results/
+IdealizeSpetral.jl/exp/HSt42/EP_flux_mean_results_chunk/
+IdealizeSpetral.jl/exp/HSt42/EP_flux_mean_results_fig1_1/
+IdealizeSpetral.jl/exp/HSt42/EP_flux_mean_results_fig1_2/
+IdealizeSpetral.jl/exp/HSt42/EP_flux_results/
+IdealizeSpetral.jl/exp/HSt42/EP_flux_results_chunk/
+IdealizeSpetral.jl/exp/HSt42/EP_flux_results_fig1_1/
+IdealizeSpetral.jl/exp/HSt42/EP_flux_results_fig1_2/
+IdealizeSpetral.jl/exp/HSt42/Fig4-1/
+IdealizeSpetral.jl/exp/HSt42/Fig4-1_0912testing.png
+IdealizeSpetral.jl/exp/HSt42/Fig4-2_0912testing.png
+IdealizeSpetral.jl/exp/HSt42/HSt42_0/
+IdealizeSpetral.jl/exp/HSt42/HSt42_10/
+IdealizeSpetral.jl/exp/HSt42/HSt42_30/
+IdealizeSpetral.jl/exp/HSt42/LH_feedback/
+IdealizeSpetral.jl/exp/HSt42/Nyquist freq.ipynb
+IdealizeSpetral.jl/exp/HSt42/PC1_results/
+IdealizeSpetral.jl/exp/HSt42/PC1_results_fig1_1/
+IdealizeSpetral.jl/exp/HSt42/PC1_results_fig1_2/
+IdealizeSpetral.jl/exp/HSt42/PC1_std_results/
+IdealizeSpetral.jl/exp/HSt42/PR0_50_output_05percertage_new.txt
+IdealizeSpetral.jl/exp/HSt42/PR0_contribution_results.h5
+IdealizeSpetral.jl/exp/HSt42/PR0_last_10000step_time_mean_t.h5
+IdealizeSpetral.jl/exp/HSt42/PR10_long_run.sh
+IdealizeSpetral.jl/exp/HSt42/PR20_long_run.sh
+IdealizeSpetral.jl/exp/HSt42/PR30_long_run.sh
+IdealizeSpetral.jl/exp/HSt42/PR40_long_run.sh
+IdealizeSpetral.jl/exp/HSt42/PR50_long_run.sh
+IdealizeSpetral.jl/exp/HSt42/PowerSpec_Dycore/
+IdealizeSpetral.jl/exp/HSt42/contribution_results_parallel.h5
+IdealizeSpetral.jl/exp/HSt42/daily_output_20000day/
+IdealizeSpetral.jl/exp/HSt42/matrix_operation.ipynb
+IdealizeSpetral.jl/exp/HSt42/memory_monitor2.sh
+IdealizeSpetral.jl/exp/HSt42/paper1_fig/
+IdealizeSpetral.jl/exp/HSt42/paper1_fig_Nick_colorbar/
+IdealizeSpetral.jl/exp/HSt42/time_idx_results/
+IdealizeSpetral.jl/exp/HSt42/time_idx_results_chunk/
+IdealizeSpetral.jl/exp/HSt42/time_idx_results_fig1_1/
+IdealizeSpetral.jl/exp/HSt42/time_idx_results_fig1_2/
+IdealizeSpetral.jl/exp/HSt42/v'q'_new.ipynb
+IdealizeSpetral.jl/exp/HSt42/visualization_Annular_mode/
+er.email
+>>>>>>> ad869e9 (first commit)
