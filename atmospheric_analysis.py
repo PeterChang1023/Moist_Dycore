@@ -90,7 +90,7 @@ class ARStatisticalTest:
         print("Computing simulated autocorrelation...")
         self.compute_simulated_autocorrelation()
         print("AR statistical test completed.")
-        return self.auto_record_exp  # Return final simulated autocorrelation results
+        return self.auto_record_exp, self.AR_ensemble  # Return final simulated autocorrelation results
 
 # ---
 # jupyter:
