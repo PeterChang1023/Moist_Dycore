@@ -317,6 +317,9 @@ class EOF:
 import numpy as np
 import dask.array as da
 from dask.diagnostics import ProgressBar
+import os
+import gc
+import h5py
 
 class AtmosphericDiagnostics:
     """
@@ -477,7 +480,7 @@ class AtmosphericDiagnostics:
 
         return emf, ehf
 
-    def dtheta(self, theta, save=False, zonal_mean=True, output_dir=None, pr_id=None):
+    def dtheta(self, theta, save=False, correct_negitive_val=True, output_dir=None, pr_id=None):
         """
         Compute vertical gradient of potential temperature ∂θ/∂z using central difference.
     
@@ -492,9 +495,7 @@ class AtmosphericDiagnostics:
         - dtheta: ndarray, shape (time, z, y, x)
         - dtheta_zonal_mean: ndarray (time, z, y) if zonal_mean=True, else None
         """
-        import os
-        import gc
-        import h5py
+
     
         print("Computing ∂θ/∂z ...")
         theta = np.asarray(theta)  # ensure numpy array
@@ -520,7 +521,7 @@ class AtmosphericDiagnostics:
         dtheta = dtheta.reshape(t, x, y, z)
         dtheta = np.einsum("txyz->tzyx", dtheta)  # (t, z, y, x)
     
-        if zonal_mean:
+        if correct_negitive_val:
             zonal = dtheta.mean(axis=3)         # (t, z, y)
             ref_mean = dtheta.mean(axis=(0, 3)) # (z, y)
     
@@ -545,7 +546,7 @@ class AtmosphericDiagnostics:
     
             print(f"Saved ∂θ/∂z to {save_path}")
     
-        return dtheta
+        return dtheta, zonal
 
 
 
