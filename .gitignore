@@ -226,3 +226,7 @@ IdealizeSpetral.jl/exp/HSt42/EP_flux_with_dry_N_square/*
 >>>>>>> ad869e9 (first commit)
 IdealizeSpetral.jl/exp/HSt42/permutation_test_ep_flux.png
 EPflux/*.npz
+*.npz
+*.nc
+*.pdf
+*.h5
