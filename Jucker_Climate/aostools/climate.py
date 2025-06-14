@@ -512,7 +512,7 @@ def ComputeVertEddy(v,t,p,p0=1e3,wave=0):
 	t = t*pp0 # t = theta
 	# zonal means
 	v_bar = np.nanmean(v,axis=-1)
-	t_bar = np.nanmean(t,axis=-1);t_bar_originl = t_bar.copy();print((np.gradient(np.nanmean(t_bar, axis=0), edge_order=2)[0]).shape)# t_bar = theta_bar
+	t_bar = np.nanmean(t,axis=-1)
 	# prepare pressure derivative
 	dthdp = np.gradient(np.nanmean(t_bar, axis=0), edge_order=2)[0] / dp# dthdp = np.gradient(t_bar, edge_order=2)[1]/dp # dthdp = d(theta_bar)/dp
 	dthdp[dthdp==0.] = np.NaN
