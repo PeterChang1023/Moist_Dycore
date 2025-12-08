@@ -1,0 +1,78 @@
+name: Dycore_env
+channels:
+  - conda-forge
+  - pytorch
+  - defaults
+
+dependencies:
+  # -----------------------
+  # Core languages
+  # -----------------------
+  - python=3.9
+  - julia=1.9
+
+  # -----------------------
+  # Jupyter / Git
+  # -----------------------
+  - jupyterlab
+  - jupyterhub
+  - jupyterlab-git
+  - jupyter
+  - ipykernel
+  - ipython
+  - ipywidgets
+
+  # -----------------------
+  # Scientific Python stack
+  # -----------------------
+  - numpy
+  - scipy
+  - pandas
+  - xarray
+  - netcdf4
+  - matplotlib
+  - seaborn
+  - scikit-learn
+  - bottleneck
+  - dask
+  - distributed
+  - tqdm
+  - pytest
+
+  # -----------------------
+  # Geoscience / mapping
+  # -----------------------
+  - cartopy
+  - fiona
+  - geopandas
+  - shapely
+  - descartes
+  - regionmask
+  - rasterio
+
+  # -----------------------
+  # Parallel / Fortran / MPI
+  # -----------------------
+  - openmpi
+  - fortran-compiler
+  - libgfortran
+  - netcdf-fortran
+  - f90nml
+  - ffmpeg
+
+  # -----------------------
+  # Misc
+  # -----------------------
+  - tensorflow
+  - cmaps
+  - colorama
+  - jinja2
+  - sh
+  - pip
+
+  # -----------------------
+  # pip-only packages
+  # -----------------------
+  - pip:
+      - multiprocess
+      - datetime
