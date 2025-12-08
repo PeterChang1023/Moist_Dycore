@@ -47,4 +47,29 @@ model components.
 ---
 
 ## Repository Structure
-
+- README.md
+- IdealizeSpetral
+    - exp
+        - HSt42 (Run Dycore at here)
+        - HSt21
+        - Barotropic
+        - Shallow_Water
+    - src
+        - Atmos_Spectral
+            - Spectral_Dynamics.jl (this is the main code of Dycore)
+            - Spectral_Spherical_Mesh.jl
+            - Output_Manager.jl
+            - Time_Integrator.jl
+            - Vert_Coordinate.jl
+            - Shallow_Water_Dynamics.jl
+            - Semi_Implicit.jl
+            - Press_And_Geopot.jl
+            - Gauss_And_Legendre.jl
+            - Dyn_Data.jl
+            - Barotropic_Dynamics.jl
+            - Atmo_Data.jl
+        - Atmos_Param
+            - HS_Forcing.jl
+    - julia
+    - Manifest.toml
+    - Project.toml
