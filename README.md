@@ -104,55 +104,55 @@ activating Dycore_env.
 cd IdealizeSpetral
 ```
 
-# Step 4: find the location of Python, which is useful for Step 6.
+### Step 4: find the location of Python, which is useful for 
 ```
 which python
 ---> output: ~miniconda3/envs/Dycore_env/bin/python
 (copy output, it will be used at Step 6.)
 ```
 
-# Step 5: call julia
+### Step 5: call julia
 ```
 julia
 ```
 
-# Step 6: in Julia, using ... (similar to import in Python)
+### Step 6: in Julia, using ... (similar to import in Python)
 ```
 julia> using Pkg
 ```
 
-# Step 7: point the python location for Julia 
+### Step 7: point the python location for Julia 
 ```
 julia> ENV["PYTHON"] = "~miniconda3/envs/Dycore_env/bin/python"
 ```
 
-# Step 8: import PyCall
+### Step 8: import PyCall
 ```
 julia> Pkg.build("PyCall")
 ```
 
-# Step 9: import PyPlot
+### Step 9: import PyPlot
 ```
 julia> Pkg.build("PyPlot")
 ```
 
-# Step 10: enter Julia package mode
+### Step 10: enter Julia package mode
 ```
 julia> ]
 ```
 
-# Step 11: install all packages
+### Step 11: install all packages
 ```
 pkg> dev . 
 ```
 
-# Step 12: precompile the all packages in JGCM
+### Step 12: precompile the all packages in JGCM
 ```
 (backspace back to julia>)
 julia> using JGCM 
 ```
 
-# Step 13: exit Julia and run the test run
+### Step 13: exit Julia and run the test run
 ```
 ctrl + D
 cd exp/HSt42
