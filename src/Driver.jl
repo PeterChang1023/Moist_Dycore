@@ -106,7 +106,15 @@ function validate_config(config::Model_Config)
         config.saving_frequency % config.Δt == 0 || throw(
             ArgumentError("saving_frequency must be evenly divisible by Δt"),
         )
+        config.saving_frequency % config.output_interval == 0 || throw(
+            ArgumentError("saving_frequency must be a multiple of output_interval so checkpoints preserve averaging windows"),
+        )
     end
+    spinup_seconds = config.spinup_day * config.day_to_sec
+    isfinite(spinup_seconds) && isinteger(spinup_seconds) || throw(
+        ArgumentError("spinup duration must be a finite integer number of seconds"))
+    Int64(spinup_seconds) % config.output_interval == 0 || throw(
+        ArgumentError("spinup duration must be a multiple of output_interval"))
     if config.do_plev_output
         config.model_type == :PrimitiveEquation || throw(
             ArgumentError("pressure-level output is only available for PrimitiveEquation"),
@@ -280,6 +288,8 @@ function JGCM_Simulate(config::Model_Config)
 
         # Load data AND get the time we left off
         saved_time = Initial_Conditions._load_restart_state!(mesh, dyn_data, config, vert_coord, atmo_data)
+        saved_time % config.output_interval == 0 || throw(ArgumentError(
+            "warm-start time must align with output_interval; checkpoints do not store partial output accumulators"))
 
         start_time = saved_time
         init_step  = false  # We are resuming, so we don't need the Euler start
@@ -343,6 +353,7 @@ function JGCM_Simulate(config::Model_Config)
         do_plev_output  = config.do_plev_output,
         pressure_levels = config.pressure_levels,
         output_interval = config.output_interval,
+        timestep        = config.Δt,
         day_to_sec      = config.day_to_sec,
         spinup_day      = config.spinup_day,
         model_mode      = om_mode,

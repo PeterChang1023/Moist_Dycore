@@ -129,6 +129,16 @@ end
             [25_000.0, 75_000.0],
         )
         NCDataset(offline_path, "r") do ds
+            for name in ("time_bounds","sample_count","averaging_duration","complete_interval")
+                NCDataset(joinpath(dir,"primitive_t0.nc"),"r") do native
+                    @test ds[name].var[:] == native[name].var[:]
+                end
+            end
+            @test ds["time"].attrib["bounds"] == "time_bounds"
+            @test ds["ta"].attrib["cell_methods"] == "time: mean"
+            @test ds["sample_count"].var[:] == [2]
+            @test ds["averaging_duration"].var[:] == [1200]
+            @test ds["complete_interval"].var[:] == [0]
             @test haskey(ds, "ta")
             @test haskey(ds, "ua")
             @test haskey(ds, "zg")
@@ -145,6 +155,9 @@ end
             @test all(ds["pr"].var[:, :, 1] .≈ 2.0e-5)
 
             NCDataset(joinpath(dir, "primitive_t0_plev.nc"), "r") do online_ds
+                for name in ("time_bounds","sample_count","averaging_duration","complete_interval")
+                    @test ds[name].var[:] == online_ds[name].var[:]
+                end
                 @test isequal(ds["zg"].var[:], online_ds["zg"].var[:])
                 @test isequal(ds["pr"].var[:], online_ds["pr"].var[:])
             end

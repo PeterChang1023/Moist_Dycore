@@ -111,7 +111,8 @@ isdefined(@__MODULE__, :PostPhysicsStateSupport) ||
             run_dir = joinpath(dir,"driver"); mkpath(run_dir)
             driver_config = S.with_config(warm;output_path=run_dir,
                 output_filename=joinpath(run_dir,"output.nc"),
-                logger=joinpath(run_dir,"progress.log"),saving_frequency=600)
+                logger=joinpath(run_dir,"progress.log"),saving_frequency=600,
+                output_interval=600)
             JGCM_Simulate(driver_config)
             resumed = Dyn_Data("resumed",5,6,24,12,8)
             @test Load_Restart_File!(resumed,

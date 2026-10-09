@@ -1,0 +1,25 @@
+[bm_off]
+min_temperature = 169.37707382544392
+steps = 144
+max_prognostic_error = 0.0
+bm_active_final_step = false
+min_pressure = 99932.74349669646
+timestep_seconds = 600
+warm_seconds = 14.52092098
+full_seconds = 53.483695091
+min_humidity = 3.767534132570056e-27
+max_abs_omega = 0.011856817291274946
+split_cold_seconds = 11.775439566
+
+[bm_on]
+min_temperature = 168.15368951916838
+steps = 144
+max_prognostic_error = 0.0
+bm_active_final_step = true
+min_pressure = 99802.37693084871
+timestep_seconds = 600
+warm_seconds = 25.74757432
+full_seconds = 54.498083103
+min_humidity = 1.7964035705973472e-25
+max_abs_omega = 0.5930126418516589
+split_cold_seconds = 28.500690659

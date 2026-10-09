@@ -121,6 +121,8 @@ mutable struct Output_Manager{M <: AbstractModelMode}
     output_interval::Int64
     sample_counter::Int64
     output_index::Int64
+    window_start_time::Int64
+    sampling_interval::Int64
 
     # --- File Handles ---
     ds_plev::Union{NCDataset, Nothing}  # pressure-level output (optional, 3D only)
@@ -182,7 +184,18 @@ function _Init_Single_File(
 
     # Time
     defVar(ds, "time", Float64, ("time",),
-           attrib=Dict("units"=>"days since 2000-01-01 00:00:00", "calendar"=>"proleptic_gregorian"))
+           attrib=Dict("units"=>"days since 2000-01-01 00:00:00", "calendar"=>"proleptic_gregorian",
+                       "bounds"=>"time_bounds"))
+    defDim(ds, "bounds", 2)
+    defVar(ds, "time_bounds", Float64, ("bounds", "time"), attrib=Dict(
+        "units"=>"days since 2000-01-01 00:00:00", "calendar"=>"proleptic_gregorian"))
+    defVar(ds, "sample_count", Int64, ("time",), attrib=Dict(
+        "units"=>"1", "long_name"=>"number of equally spaced endpoint samples in time mean"))
+    defVar(ds, "averaging_duration", Float64, ("time",), attrib=Dict(
+        "units"=>"s", "long_name"=>"duration of averaging window"))
+    defVar(ds, "complete_interval", Int8, ("time",), attrib=Dict(
+        "long_name"=>"whether the record covers a complete requested output interval",
+        "flag_values"=>Int8[0,1], "flag_meanings"=>"partial complete"))
 
     if file_type == :plev
         defDim(ds, "plev", length(target_levels))
@@ -234,6 +247,7 @@ function _Init_Single_File(
         v.attrib["units"]         = meta.units
         v.attrib["long_name"]     = meta.long_name
         v.attrib["standard_name"] = meta.std_name
+        v.attrib["cell_methods"]  = "time: mean"
     end
     # --- Data Variables --- #
 
@@ -251,6 +265,7 @@ function Output_Manager(
     pressure_levels::Vector{Float64} = Float64[],
     day_to_sec::Int64 = 86400,
     output_interval::Int64 = 86400,
+    timestep::Int64 = 0,
     spinup_day::Float64 = 0.0,
     model_mode::Symbol = :PrimitiveEquation,
     institute::String = "My Research Lab",
@@ -259,6 +274,15 @@ function Output_Manager(
     day_to_sec > 0 || throw(ArgumentError("day_to_sec must be positive"))
     output_interval > 0 || throw(ArgumentError("output_interval must be positive"))
     spinup_day >= 0 || throw(ArgumentError("spinup_day must be non-negative"))
+    start_time >= 0 && start_time % output_interval == 0 || throw(
+        ArgumentError("output start/restart time must align with output_interval; no partial accumulator is restored"))
+    spinup_seconds = spinup_day * day_to_sec
+    isfinite(spinup_seconds) && isinteger(spinup_seconds) || throw(
+        ArgumentError("spinup duration must be a finite integer number of seconds"))
+    Int64(spinup_seconds) % output_interval == 0 || throw(
+        ArgumentError("spinup duration must align with output_interval"))
+    timestep >= 0 && (timestep == 0 || output_interval % timestep == 0) || throw(
+        ArgumentError("timestep must be non-negative and divide output_interval"))
     validate_output_series(filename, start_time; day_to_sec)
     if do_plev_output
         !isempty(pressure_levels) || throw(
@@ -291,6 +315,8 @@ function Output_Manager(
         "gravity_units" => "m s-2",
         "dry_air_gas_constant" => atmo_data.rdgas,
         "dry_air_gas_constant_units" => "J kg-1 K-1",
+        "output_interval_seconds" => output_interval,
+        "averaging_sample_convention" => "equally spaced model-step endpoints; time bounds enclose preceding steps",
     )
 
     # Define Buffers (Initialize as empty by default)
@@ -365,6 +391,7 @@ function Output_Manager(
         do_plev_output, pressure_levels, log.(max.(pressure_levels, 1.0)),
         interpolation_cache, interp_buf, vert_ak, vert_bk,
         day_to_sec, start_time, start_time, spinup_time, output_interval, 0, 1,
+        spinup_time, timestep,
         ds_plev, ds_raw, acc_raw, active_symbols, var_info_map,
         base_fn, collect(mesh.λc), collect(mesh.θc), vert_coord, global_meta
     )
@@ -376,6 +403,18 @@ end
 
 # Generic Wrapper
 function Update_Output!(manager::Output_Manager{M}, dyn_data, current_time::Int64) where M
+    if current_time == manager.current_time && current_time == manager.start_time
+        return
+    end
+    elapsed = current_time - manager.current_time
+    elapsed > 0 || throw(ArgumentError("output sample times must increase strictly"))
+    if manager.sampling_interval == 0
+        manager.output_interval % elapsed == 0 || throw(
+            ArgumentError("sampling interval must divide output_interval"))
+        manager.sampling_interval = elapsed
+    end
+    elapsed == manager.sampling_interval || throw(
+        ArgumentError("output samples must be equally spaced; expected $(manager.sampling_interval) s, got $elapsed s"))
     manager.current_time = current_time
     if current_time <= manager.spinup_time; return; end
 
@@ -432,23 +471,33 @@ end
 # 6. IO Logic (Dispatch Enabled)
 # ==============================================================================
 
-function Flush_to_Disk!(manager::Output_Manager{M}) where M
+function Flush_to_Disk!(manager::Output_Manager{M}; allow_partial::Bool=false) where M
     if manager.sample_counter == 0; return; end
 
     t_val = manager.current_time / manager.day_to_sec
+    duration = manager.current_time - manager.window_start_time
+    duration == manager.sample_counter * manager.sampling_interval ||
+        error("Output samples do not cover the recorded averaging window")
+    complete = duration == manager.output_interval
+    (complete || (allow_partial && 0 < duration < manager.output_interval)) ||
+        throw(ArgumentError("cannot flush an incomplete output interval except at finalization"))
 
     # Write time index to whichever files are open
-    if manager.ds_raw  !== nothing
-        manager.ds_raw["time"][manager.output_index]  = t_val
-    end
-    if manager.ds_plev !== nothing
-        manager.ds_plev["time"][manager.output_index] = t_val
+    for ds in (manager.ds_raw,manager.ds_plev)
+        ds === nothing && continue
+        idx = manager.output_index
+        ds["time"][idx] = t_val
+        ds["time_bounds"][:,idx] = [manager.window_start_time / manager.day_to_sec,t_val]
+        ds["sample_count"][idx] = manager.sample_counter
+        ds["averaging_duration"][idx] = duration
+        ds["complete_interval"][idx] = Int8(complete)
     end
 
     # Dispatch to specific writing logic
     _write_core!(manager.mode, manager)
 
     manager.sample_counter = 0
+    manager.window_start_time = manager.current_time
     manager.output_index += 1
 end
 
@@ -583,16 +632,16 @@ end
 """
     Rotate_NC_Chunk!(manager, new_chunk_time)
 
-Flush any remaining data, close the current NC output files, and open fresh
+Close the current NC output files at a completed averaging boundary, and open fresh
 time-stamped files for the next chunk. Called at each saving_frequency boundary
 in the driver, coordinated with JLD2 checkpoint writes.
 """
 function Rotate_NC_Chunk!(manager::Output_Manager, new_chunk_time::Int64)
     _check_chunk_paths(manager.base_filename, new_chunk_time)
-    # Flush any partially-accumulated data into the closing chunk
-    if manager.sample_counter > 0
-        Flush_to_Disk!(manager)
-    end
+    new_chunk_time == manager.current_time && new_chunk_time % manager.output_interval == 0 ||
+        throw(ArgumentError("chunk rotation must occur at the current completed output boundary"))
+    manager.sample_counter == 0 || throw(
+        ArgumentError("cannot rotate with a partial averaging window"))
 
     # Close current chunk files
     if manager.ds_plev !== nothing
@@ -619,7 +668,7 @@ end
 
 function Finalize_Output!(manager::Output_Manager)
     if manager.sample_counter > 0
-        Flush_to_Disk!(manager)
+        Flush_to_Disk!(manager; allow_partial=true)
     end
     if manager.ds_plev !== nothing; close(manager.ds_plev); end
     if manager.ds_raw  !== nothing; close(manager.ds_raw);  end

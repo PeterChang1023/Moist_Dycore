@@ -2,7 +2,7 @@
 
 The driver writes time-mean NetCDF diagnostics, a plain-text runtime log, and
 optional JLD2 checkpoints. NetCDF output and checkpoints share the same model
-clock but have independent intervals: `output_interval` controls diagnostic
+clock: `output_interval` controls diagnostic
 records and `saving_frequency` controls checkpointing and file rotation.
 
 ## NetCDF file naming
@@ -40,8 +40,23 @@ t_{spinup}=t_{segment\ start}+
 \mathtt{spinup\_day}\times\mathtt{day\_to\_sec}
 ```
 
-are skipped. Finalization and chunk rotation flush a partially accumulated
-interval, so its record can contain fewer samples than a regular interval.
+are skipped. Checkpoint/rotation cadence must be a multiple of
+`output_interval`. Spinup duration and the absolute warm-start time must also
+align with that interval. Rotation never splits a mean, and an incomplete
+window cannot be resumed without its accumulator. Your final segment duration
+may end between boundaries; finalization writes that shorter window explicitly.
+
+All diagnostic variables have `cell_methods = "time: mean"`. Each record has:
+
+- `time_bounds(bounds,time)`, the start and end of its averaging window;
+- `sample_count(time)`, the number of equally spaced model-step endpoint samples;
+- `averaging_duration(time)`, the window duration in seconds;
+- `complete_interval(time)`, 1 for a full requested interval and 0 for a partial final window.
+
+Native, online pressure-level and offline interpolated files retain the same
+metadata. For spectra requiring evenly spaced full-window means, exclude
+records with `complete_interval == 0` and verify that time coordinates are
+regular. Existing files are not changed retroactively.
 
 For online pressure output, native-coordinate fields are averaged first and
 the time-mean field is then interpolated. This is not the same as averaging

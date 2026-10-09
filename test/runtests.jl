@@ -18,6 +18,7 @@ end
     include("test_Restart_Contract.jl")
     include("test_Output_Manager.jl")
     include("test_Output_Integrity.jl")
+    include("test_Output_Windows.jl")
 end
 
 @testset "Physics Parameterizations" begin

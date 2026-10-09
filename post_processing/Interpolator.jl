@@ -92,6 +92,9 @@ function Interpolate_File(
         rm(output_path)
     end
     ds_out = NCDataset(output_path, "c")
+    for (key,value) in ds_in.attrib
+        ds_out.attrib[key] = value
+    end
 
     # Define Dimensions
     defDim(ds_out, "lon", ds_in.dim["lon"])
@@ -103,9 +106,22 @@ function Interpolate_File(
     for coord in ["lon", "lat", "time"]
         if haskey(ds_in, coord)
             v_dst = defVar(ds_out, coord, Float64, (coord,), attrib = ds_in[coord].attrib)
-            coord_values = ds_in[coord][:]
+            coord_values = ds_in[coord].var[:]
             v_dst[1:length(coord_values)] = coord_values
         end
+    end
+
+    # Preserve averaging semantics, including partial final records, rather
+    # than dropping the time coordinate's bounds in offline pressure output.
+    if haskey(ds_in,"time_bounds")
+        defDim(ds_out,"bounds",ds_in.dim["bounds"])
+        defVar(ds_out,"time_bounds",Float64,("bounds","time"),
+               attrib=ds_in["time_bounds"].attrib)[:,:] = ds_in["time_bounds"].var[:,:]
+    end
+    for name in ("sample_count","averaging_duration","complete_interval")
+        haskey(ds_in,name) || continue
+        defVar(ds_out,name,eltype(ds_in[name].var),("time",),
+               attrib=ds_in[name].attrib)[:] = ds_in[name].var[:]
     end
 
     # Define Pressure Levels variable

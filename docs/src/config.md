@@ -213,7 +213,8 @@ not read by the current implementation.
 | `restart_legacy_contract` | `Union{Nothing,Dict{String,Any}}` | `nothing` | verified original-run metadata for checkpoints older than v4 |
 | `saving_frequency` | `Int64` | `86400` | checkpoint and NetCDF chunk interval in seconds; 0 disables both |
 
-If positive, `saving_frequency` must be divisible by `Δt`. Checkpoint behavior,
+If positive, `saving_frequency` must be a multiple of `output_interval` (which
+must itself be divisible by `Δt`). Checkpoint behavior,
 retention, and output conflict checks are detailed in [Output and restarts](@ref).
 
 ## Output controls
@@ -233,6 +234,9 @@ retention, and output conflict checks are detailed in [Output and restarts](@ref
 is available only for `:PrimitiveEquation`, requires a nonempty vector of
 positive finite pressures, and always adds `:ps` to the active variable list.
 See [Output and restarts](@ref) for the variable namelist and file semantics.
+Spinup duration must be an integer number of seconds and a multiple of
+`output_interval`. The absolute checkpoint time used for a warm start must
+also align with that interval, because partial output accumulators are not saved.
 
 ## Validation summary
 
@@ -244,6 +248,7 @@ Before allocation the driver rejects:
 - nonpositive `radius`, `grav`, `day_to_sec`, `Δt`, `end_time`, or
   `output_interval`;
 - durations or output/checkpoint intervals not divisible by `Δt`;
+- checkpoint cadence or spinup duration not aligned with output intervals;
 - negative `saving_frequency` or `spinup_day`;
 - pressure-level output for a 2-D model or with invalid target pressures;
 - moist primitive-equation runs without virtual temperature;
