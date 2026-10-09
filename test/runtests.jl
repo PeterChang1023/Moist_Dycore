@@ -34,6 +34,7 @@ end
 end
 
 @testset "Dynamics-physics integration" begin
+    include("test_Vertical_Velocity.jl")
     include("test_Post_Physics_State.jl")
     include("test_Coupling.jl")
     include("test_Betts_Miller_Coupling.jl")

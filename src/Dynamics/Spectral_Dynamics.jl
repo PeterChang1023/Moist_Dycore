@@ -452,7 +452,8 @@ function Four_In_One!(
     grid_δu::Array{Float64,3},
     grid_δv::Array{Float64,3},
     grid_δps::Array{Float64,3},
-    grid_δt::Array{Float64,3},
+    grid_δt::Array{Float64,3};
+    diagnostic_only::Bool = false,
 )
 
     # Unpack parameters
@@ -487,9 +488,11 @@ function Four_In_One!(
                     dlnp_dθ = x1 * grid_dθ_ps[i, j, 1]
 
                     # (grid_δu, grid_δv) -= R*T_v/p * ∇p
-                    virtual_t_k = grid_virtual_t[i, j, k]
-                    grid_δu[i, j, k] -= rdgas * virtual_t_k * dlnp_dλ
-                    grid_δv[i, j, k] -= rdgas * virtual_t_k * dlnp_dθ
+                    if !diagnostic_only
+                        virtual_t_k = grid_virtual_t[i, j, k]
+                        grid_δu[i, j, k] -= rdgas * virtual_t_k * dlnp_dλ
+                        grid_δv[i, j, k] -= rdgas * virtual_t_k * dlnp_dθ
+                    end
 
                     # dmean = ∇⋅(v_k * Δp_k) = div_k * Δp_k + v_k * (Δbk_k * ∇p_s)
                     dmean =
@@ -518,7 +521,9 @@ function Four_In_One!(
                         grid_v[i, j, k] * dlnp_dθ
 
                     # Constant-cp moist pressure work: grid_δt += κ*T_v*w/p
-                    grid_δt[i, j, k] += kappa * virtual_t_k * x5
+                    if !diagnostic_only
+                        grid_δt[i, j, k] += kappa * grid_virtual_t[i, j, k] * x5
+                    end
 
                     # grid_w_full[:,:,k] = dp/dt vertical velocity 
                     grid_w_full[i, j, k] = x5 * grid_p_full[i, j, k]
@@ -541,7 +546,9 @@ function Four_In_One!(
             end
 
             # ∂ps/∂t = -∑_{r=1}^nd ∇(vrΔp_r) = -dmean_tot
-            grid_δps[i, j, 1] -= dmean_tot
+            if !diagnostic_only
+                grid_δps[i, j, 1] -= dmean_tot
+            end
 
             for k = 1:nd-1
                 # M_{k+1/2} = -∑_{r=1}^k ∇(vrΔp_r) - B_{k+1/2}∂ps/∂t
@@ -556,6 +563,24 @@ function Four_In_One!(
 
 end
 
+
+
+"""Diagnose accepted-state pressure velocity (Pa/s) and interface mass flux.
+
+Pressure arrays must already describe `grid_ps_c`. Reuses the dynamics
+continuity formula without accumulating any tendencies or changing time levels.
+"""
+function _refresh_vertical_velocity!(mesh, vert_coord, atmo_data, dyn_data)
+    d = dyn_data
+    Compute_Gradients!(mesh, d.spe_lnps_c, d.grid_dλ_ps, d.grid_dθ_ps)
+    d.grid_dλ_ps .*= d.grid_ps_c
+    d.grid_dθ_ps .*= d.grid_ps_c
+    Four_In_One!(vert_coord, atmo_data, d.grid_div, d.grid_u_c, d.grid_v_c,
+        d.grid_ps_c, d.grid_Δp, d.grid_lnp_half, d.grid_lnp_full, d.grid_p_full,
+        d.grid_dλ_ps, d.grid_dθ_ps, vert_coord.virtual_temperature, d.grid_M_half, d.grid_w_full,
+        d.grid_δu, d.grid_δv, d.grid_δps, d.grid_δt; diagnostic_only=true)
+    return nothing
+end
 
 
 """
@@ -1155,6 +1180,8 @@ function Atmosphere_Update!(
         grid_z_half,
         grid_q_c,
     )
+
+    _refresh_vertical_velocity!(mesh, vert_coord, atmo_data, dyn_data)
 
     return
 end
