@@ -130,6 +130,15 @@ Handles allocation, initialization, time-stepping, and I/O based on the config.
 function JGCM_Simulate(config::Model_Config)
     simulation_start_ns = time_ns()
     validate_config(config)
+    if !config.is_restart
+        Output_Manager_Module.validate_output_series(config.output_filename, 0;
+                                                     day_to_sec=config.day_to_sec)
+        restart_dir = joinpath(config.output_path, "restart")
+        if isdir(restart_dir) && any(f -> endswith(f, ".jld2"), readdir(restart_dir))
+            throw(ArgumentError("cold start would reuse existing checkpoints in $restart_dir; " *
+                                "use a fresh output directory or archive the old run"))
+        end
+    end
     physics_params = copy(config.physics_params)
     mkpath(config.output_path)
     mkpath(dirname(config.output_filename))
@@ -291,17 +300,6 @@ function JGCM_Simulate(config::Model_Config)
         msg_init_cond = "Cold Start: Setting Analytical Initial Conditions..."
         @info msg_init_cond
         open(config.logger, "a") do log; println(log, msg_init_cond); end
-
-        if isdir(restart_dir) && !isempty(readdir(restart_dir))
-            msg_clean_restart = "COLD START DETECTED: Cleaning up old restart files in $restart_dir"
-            @warn msg_clean_restart
-            open(config.logger, "a") do log; println(log, msg_clean_restart); end
-            for f in readdir(restart_dir, join=true)
-                if endswith(f, ".jld2")
-                    rm(f)
-                end
-            end
-        end
 
         # Standard initialization
         Initialize_Atmos_State!(mesh, atmo_data, dyn_data, vert_coord, config)

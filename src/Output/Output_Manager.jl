@@ -42,6 +42,52 @@ mode_symbol(::PrimitiveEquationMode) = :PrimitiveEquation
 mode_symbol(::BarotropicMode)        = :Barotropic
 mode_symbol(::ShallowWaterMode)      = :ShallowWater
 
+# Only inspect this output series; unrelated NetCDF products can share a directory.
+function _output_series_files(filename::AbstractString)
+    base = splitext(filename)[1]
+    dir, stem = dirname(base), basename(base)
+    isdir(dir) || return Pair{String,Union{Nothing,Int64}}[]
+    matches = Pair{String,Union{Nothing,Int64}}[]
+    for name in readdir(dir)
+        if name in (stem * ".nc", stem * "_plev.nc")
+            push!(matches, joinpath(dir, name) => nothing)
+        elseif startswith(name, stem * "_t") && endswith(name, ".nc")
+            suffix = chop(name; head=length(stem) + 2, tail=3)
+            endswith(suffix, "_plev") && (suffix = chop(suffix; tail=5))
+            occursin(r"^\d+$", suffix) || continue
+            timestamp = tryparse(Int64, suffix)
+            timestamp === nothing || push!(matches, joinpath(dir, name) => timestamp)
+        end
+    end
+    return matches
+end
+
+function validate_output_series(filename::AbstractString, start_time::Integer;
+                                day_to_sec::Integer=86400)
+    for (path, chunk_start) in _output_series_files(filename)
+        if start_time == 0 || chunk_start === nothing || chunk_start >= start_time
+            throw(ArgumentError("existing output conflicts with this run: $path; " *
+                                "use a fresh output filename/directory or archive the old series"))
+        end
+        # A chunk whose filename predates the restart may still contain later records.
+        NCDataset(path, "r") do ds
+            haskey(ds, "time") || throw(ArgumentError("output has no time coordinate: $path"))
+            times = ds["time"].var[:]
+            get(ds["time"].attrib, "units", "") == "days since 2000-01-01 00:00:00" ||
+                throw(ArgumentError("cannot establish output time coverage: $path"))
+            all(t -> isfinite(t) && t <= start_time / day_to_sec, times) ||
+                throw(ArgumentError("output extends beyond restart time: $path; use a fresh output directory"))
+        end
+    end
+    return nothing
+end
+
+function _check_chunk_paths(base, timestamp)
+    for path in ("$(base)_t$(timestamp).nc", "$(base)_t$(timestamp)_plev.nc")
+        ispath(path) && throw(ArgumentError("refusing to overwrite existing output: $path"))
+    end
+end
+
 # ==============================================================================
 # 2. The Parameterized Struct
 # ==============================================================================
@@ -105,7 +151,7 @@ function _Init_Single_File(
     vert_coord=nothing,
     global_meta::Dict{String, Any}=Dict{String, Any}()
 )
-    if isfile(filename); rm(filename); end
+    ispath(filename) && throw(ArgumentError("refusing to overwrite existing output: $filename"))
     ds = NCDataset(filename, "c")
 
     # --- Global Attributes (CF-1.11 Compliance) --- #
@@ -213,6 +259,7 @@ function Output_Manager(
     day_to_sec > 0 || throw(ArgumentError("day_to_sec must be positive"))
     output_interval > 0 || throw(ArgumentError("output_interval must be positive"))
     spinup_day >= 0 || throw(ArgumentError("spinup_day must be non-negative"))
+    validate_output_series(filename, start_time; day_to_sec)
     if do_plev_output
         !isempty(pressure_levels) || throw(
             ArgumentError("pressure-level output requires at least one pressure level"),
@@ -541,6 +588,7 @@ time-stamped files for the next chunk. Called at each saving_frequency boundary
 in the driver, coordinated with JLD2 checkpoint writes.
 """
 function Rotate_NC_Chunk!(manager::Output_Manager, new_chunk_time::Int64)
+    _check_chunk_paths(manager.base_filename, new_chunk_time)
     # Flush any partially-accumulated data into the closing chunk
     if manager.sample_counter > 0
         Flush_to_Disk!(manager)
