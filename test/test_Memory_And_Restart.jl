@@ -78,14 +78,16 @@ end
             file["state/spe_q_c"] = zeros(ComplexF64, 2, 3, 2)
         end
         version2_restored = Dyn_Data("version2", 1, 2, 4, 2, 2)
-        @test Load_Restart_File!(version2_restored, version2_file) == 450
+        @test_throws ErrorException Load_Restart_File!(version2_restored, version2_file)
+        @test Load_Restart_File!(version2_restored, version2_file; allow_partial=true) == 450
         @test version2_restored.grid_q_c == source.grid_q_c
 
         legacy_file = joinpath(dir, "legacy.jld2")
         legacy = LegacyRestartState(copy(source.spe_vor_p), copy(source.grid_u_c))
         jldsave(legacy_file; dyn_data_state = legacy, saved_time = 300)
         legacy_restored = Dyn_Data("legacy", 1, 2, 4, 2, 2)
-        @test Load_Restart_File!(legacy_restored, legacy_file) == 300
+        @test_throws ErrorException Load_Restart_File!(legacy_restored, legacy_file)
+        @test Load_Restart_File!(legacy_restored, legacy_file; allow_partial=true) == 300
         @test legacy_restored.spe_vor_p == source.spe_vor_p
         @test legacy_restored.grid_u_c == source.grid_u_c
     end

@@ -199,15 +199,20 @@ With `saving_frequency > 0`, checkpoints are written atomically as
 A temporary file is completed and then renamed into place. Versioned
 checkpoints store the absolute saved time, resolution tuple, and every array in
 `Dyn_Data`, including all three time levels required to resume leapfrog
-integration. Resolution is checked on load.
+integration. Driver checkpoints use format v4 and also record a compatibility
+contract. Loading validates all required state/history, array shapes/types and
+finite values before copying. Configured primitive-equation restarts also check
+positive pressure/temperature and valid specific humidity. The equation set,
+timestep, grid and actual vertical coefficients, planetary/thermodynamic
+constants, filtering/damping and core correction switches must match.
+Forcing parameters such as BM, LRF and SST may intentionally change.
 
 ### Cold start
 
 When `is_restart = false`, `initial_condition` is applied and model time starts
-at zero. If `<output_path>/restart/` already exists, the driver deletes every
-`.jld2` file in that directory before initialization. Use a new output
-directory or copy checkpoints elsewhere before launching a cold start when old
-files must be retained.
+at zero. Existing matching NetCDF chunks or checkpoints cause an error before
+the log is modified. Use a fresh output directory, or archive the old run.
+Files are never automatically overwritten to start a new series.
 
 ### Warm start
 
@@ -221,6 +226,21 @@ restart_file = "run/restart/restart_t86400.jld2"
 The saved state and absolute time are restored, the Euler startup is skipped,
 and the semi-implicit matrices are rebuilt for the mature leapfrog interval.
 `end_time` specifies how much **additional** time to integrate.
+
+Older checkpoints lack the metadata needed to validate time history and grid.
+After checking the original run configuration, supply:
+
+```julia
+restart_legacy_contract = Restart_Contract(original_config)
+```
+
+This declares the configuration that actually produced the checkpoint; it
+must agree with the new run's core dynamics. It does not remap vertical levels
+or rebuild history for a changed timestep. Incomplete old files are rejected.
+The low-level loader's `allow_partial=true` is available only for state
+inspection, and cannot be combined with a configured forecast restart.
+Earlier chunks may remain for continuation only when their records end at or
+before the checkpoint. Overlapping or later chunks require a fresh output series.
 
 At checkpoint boundaries, the driver retains the latest five restart files.
 During a warm-start segment it protects the checkpoint used to start that

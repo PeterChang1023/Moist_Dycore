@@ -91,7 +91,7 @@ isdefined(@__MODULE__, :PostPhysicsStateSupport) ||
             original = S.snapshot(f.dyn)
             # Model a complete pre-fix checkpoint with stale derived arrays.
             fill!(f.dyn.grid_vor,7e-4); fill!(f.dyn.grid_div,-8e-4)
-            manager = Restart_Manager(dir,600)
+            manager = Restart_Manager(dir,600; contract=Restart_Contract(f.config,f.vert,f.atmo))
             Write_Restart_File(manager,f.dyn,f.integrator.time)
             path = joinpath(dir,"restart_t1800.jld2")
             for (key,val) in original; copyto!(getfield(f.dyn,key),val); end

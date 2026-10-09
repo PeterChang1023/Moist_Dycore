@@ -210,10 +210,11 @@ not read by the current implementation.
 |:---|:---|:---|:---|
 | `is_restart` | `Bool` | `false` | load a checkpoint instead of applying `initial_condition` |
 | `restart_file` | `String` | `""` | JLD2 checkpoint path for a warm start |
+| `restart_legacy_contract` | `Union{Nothing,Dict{String,Any}}` | `nothing` | verified original-run metadata for checkpoints older than v4 |
 | `saving_frequency` | `Int64` | `86400` | checkpoint and NetCDF chunk interval in seconds; 0 disables both |
 
 If positive, `saving_frequency` must be divisible by `Δt`. Checkpoint behavior,
-retention, and cold-start cleanup are detailed in [Output and restarts](@ref).
+retention, and output conflict checks are detailed in [Output and restarts](@ref).
 
 ## Output controls
 

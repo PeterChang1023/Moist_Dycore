@@ -56,6 +56,8 @@ Base.@kwdef struct Model_Config
     # -------------------------------------------------------
     is_restart::Bool         = false       # Toggle warm start
     restart_file::String     = ""          # Path to the .jld2 file to load
+    # Original-run compatibility metadata for pre-v4 checkpoints (explicit attestation).
+    restart_legacy_contract::Union{Nothing,Dict{String,Any}} = nothing
     saving_frequency::Int64  = 86400       # How often to save JLD2 checkpoints and rotate NC chunks (seconds)
 
     # -------------------------------------------------------

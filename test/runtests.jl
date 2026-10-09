@@ -15,6 +15,7 @@ end
     include("test_Driver.jl")
     include("test_Diagnostic_Allocations.jl")
     include("test_Memory_And_Restart.jl")
+    include("test_Restart_Contract.jl")
     include("test_Output_Manager.jl")
     include("test_Output_Integrity.jl")
 end

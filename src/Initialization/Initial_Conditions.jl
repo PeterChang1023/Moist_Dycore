@@ -6,22 +6,28 @@ using ..Dyn_Data_Module
 using ..Experiment_Configuration
 using ..Variable_Mappings_Module
 using ..Vert_Coordinate_Module
-using ..Press_And_Geopot_Module: Pressure_Variables!
-using ..Spectral_Dynamics_Module: Get_Topography!, _refresh_grid_vor_div!
+using ..Press_And_Geopot_Module: Pressure_Variables!, Compute_Pressures_And_Heights!
+using ..Spectral_Dynamics_Module: Get_Topography!, _refresh_grid_vor_div!, _refresh_vertical_velocity!
 using ..Restart_Manager_Module
 
 export Initialize_Atmos_State!
 
 """Load prognostics and reconstruct derived fields needed by resumed dynamics."""
-function _load_restart_state!(mesh, dyn_data, config)
-    saved_time = Load_Restart_File!(dyn_data, config.restart_file)
+function _load_restart_state!(mesh, dyn_data, config, vert_coord, atmo_data)
+    saved_time = Load_Restart_File!(dyn_data, config.restart_file;
+        expected_contract=Restart_Contract(config,vert_coord,atmo_data),
+        legacy_contract=config.restart_legacy_contract)
+    _refresh_grid_vor_div!(mesh,dyn_data.spe_vor_c,dyn_data.spe_div_c,
+                          dyn_data.grid_vor,dyn_data.grid_div)
     if config.model_type == :PrimitiveEquation
         # Pre-fix checkpoints may contain pre-physics grid diagnostics. Current
         # spectra are authoritative; preserve all loaded time-level prognostics.
-        _refresh_grid_vor_div!(
-            mesh, dyn_data.spe_vor_c, dyn_data.spe_div_c,
-            dyn_data.grid_vor, dyn_data.grid_div,
-        )
+        d = dyn_data
+        d.grid_lnps .= log.(d.grid_ps_c)
+        Compute_Pressures_And_Heights!(atmo_data,vert_coord,d.grid_ps_c,d.grid_geopots,
+            d.grid_t_c,d.grid_p_half,d.grid_Δp,d.grid_lnp_half,d.grid_p_full,
+            d.grid_lnp_full,d.grid_z_full,d.grid_z_half,d.grid_q_c)
+        _refresh_vertical_velocity!(mesh,vert_coord,atmo_data,d)
     end
     return saved_time
 end
@@ -47,7 +53,7 @@ function Initialize_Atmos_State!(
     # --- Restart --- #
     if config.is_restart
         if isfile(config.restart_file)
-            _load_restart_state!(mesh, dyn_data, config)
+            _load_restart_state!(mesh, dyn_data, config, vert_coord, atmo_data)
             @info "Initialization complete: Loaded warm start from $(config.restart_file)"
             return # <--- Crucial: Stop here!
         else

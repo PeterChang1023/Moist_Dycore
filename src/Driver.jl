@@ -261,7 +261,8 @@ function JGCM_Simulate(config::Model_Config)
     # Setup Restart Manager
     saving_freq = config.saving_frequency
     restart_dir = joinpath(config.output_path, "restart")
-    restart_mgr = Restart_Manager(restart_dir, saving_freq)
+    restart_mgr = Restart_Manager(restart_dir, saving_freq;
+                                 contract=Restart_Contract(config,vert_coord,atmo_data))
 
     # State Variables for Integrator
     start_time = 0
@@ -278,7 +279,7 @@ function JGCM_Simulate(config::Model_Config)
         end
 
         # Load data AND get the time we left off
-        saved_time = Initial_Conditions._load_restart_state!(mesh, dyn_data, config)
+        saved_time = Initial_Conditions._load_restart_state!(mesh, dyn_data, config, vert_coord, atmo_data)
 
         start_time = saved_time
         init_step  = false  # We are resuming, so we don't need the Euler start

@@ -100,7 +100,7 @@ export Shallow_Water_Dynamics!
 
 # Output
 using .Restart_Manager_Module
-export Restart_Manager, Write_Restart_File, Load_Restart_File!
+export Restart_Manager, Write_Restart_File, Load_Restart_File!, Restart_Contract
 using .Output_Manager_Module
 export Output_Manager, Update_Output!, Finalize_Output!
 
