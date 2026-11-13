@@ -1,0 +1,172 @@
+using Test
+using JLD2
+using JGCM
+
+mutable struct LegacyRestartState
+    spe_vor_p::Array{ComplexF64,3}
+    grid_u_c::Array{Float64,3}
+end
+
+@testset "Restart compatibility" begin
+    mktempdir() do dir
+        manager = Restart_Manager(dir, 600)
+        source = Dyn_Data("source", 1, 2, 4, 2, 2)
+        array_fields = filter(name -> getfield(source, name) isa Array, fieldnames(Dyn_Data))
+        # Populate every element, including diagnostics and all three time levels.
+        # Distinct field/element values expose omissions and swapped buffers.
+        for (field_index, name) in enumerate(array_fields)
+            array = getfield(source, name)
+            for i in eachindex(array)
+                array[i] = eltype(array) <: Complex ?
+                    complex(field_index + i / 128, -field_index - i / 256) :
+                    field_index + i / 128
+            end
+        end
+        Write_Restart_File(manager, source, 600)
+
+        restored = Dyn_Data("restored", 1, 2, 4, 2, 2)
+        buffers = Dict(name => getfield(restored, name) for name in array_fields)
+        for array in values(buffers)
+            fill!(array, NaN)
+        end
+        checkpoint = joinpath(dir, "restart_t600.jld2")
+        @test Load_Restart_File!(restored, checkpoint) === Int64(600)
+        jldopen(checkpoint, "r") do file
+            @test file["restart_format_version"] == 3
+            @test file["saved_time"] === Int64(600)
+            @test file["dimensions"] == (1, 2, 4, 2, 2)
+            @test Set(keys(file["state"])) == Set(string.(array_fields))
+            for name in array_fields
+                @testset "$name" begin
+                    expected, actual = getfield(source, name), getfield(restored, name)
+                    saved = file["state/$name"]
+                    @test size(saved) == size(expected) == size(actual)
+                    @test typeof(saved) == typeof(expected) == typeof(actual)
+                    @test reinterpret(UInt8, vec(saved)) == reinterpret(UInt8, vec(expected))
+                    @test reinterpret(UInt8, vec(actual)) == reinterpret(UInt8, vec(expected))
+                    @test actual === buffers[name]
+                end
+            end
+        end
+        @test restored.name == "restored"
+        @test !isfile(checkpoint * ".tmp")
+
+        @testset "Reject incompatible dimensions and array shapes" begin
+            wrong_resolution = Dyn_Data("wrong", 2, 3, 4, 2, 2)
+            @test_throws ErrorException Load_Restart_File!(wrong_resolution, checkpoint)
+            for shape in ((5, 2, 2), (4, 3, 2), (4, 2, 3))
+                invalid = joinpath(dir, "wrong_shape_$(join(shape, '_')).jld2")
+                jldopen(invalid, "w") do file
+                    file["restart_format_version"] = 3
+                    file["saved_time"] = 600
+                    file["dimensions"] = (1, 2, 4, 2, 2)
+                    file["state/grid_q_c"] = zeros(Float64, shape)
+                end
+                @test_throws ErrorException Load_Restart_File!(restored, invalid)
+            end
+        end
+
+        # Version-2 restarts may contain obsolete spectral humidity arrays;
+        # the version-3 grid-only state loads the common grid fields and
+        # deliberately ignores those extras.
+        version2_file = joinpath(dir, "restart_v2.jld2")
+        jldopen(version2_file, "w") do file
+            file["restart_format_version"] = 2
+            file["saved_time"] = 450
+            file["dimensions"] = (1, 2, 4, 2, 2)
+            file["state/grid_q_c"] = source.grid_q_c
+            file["state/spe_q_c"] = zeros(ComplexF64, 2, 3, 2)
+        end
+        version2_restored = Dyn_Data("version2", 1, 2, 4, 2, 2)
+        @test_throws ErrorException Load_Restart_File!(version2_restored, version2_file)
+        @test Load_Restart_File!(version2_restored, version2_file; allow_partial=true) == 450
+        @test version2_restored.grid_q_c == source.grid_q_c
+
+        legacy_file = joinpath(dir, "legacy.jld2")
+        legacy = LegacyRestartState(copy(source.spe_vor_p), copy(source.grid_u_c))
+        jldsave(legacy_file; dyn_data_state = legacy, saved_time = 300)
+        legacy_restored = Dyn_Data("legacy", 1, 2, 4, 2, 2)
+        @test_throws ErrorException Load_Restart_File!(legacy_restored, legacy_file)
+        @test Load_Restart_File!(legacy_restored, legacy_file; allow_partial=true) == 300
+        @test legacy_restored.spe_vor_p == source.spe_vor_p
+        @test legacy_restored.grid_u_c == source.grid_u_c
+    end
+end
+
+@testset "Reusable output and PBL workspaces" begin
+    mesh = Spectral_Spherical_Mesh(3, 4, 64, 32, 2, 6.371e6)
+    vert = Vert_Coordinate(
+        64,
+        32,
+        2,
+        "even_sigma",
+        "simmons_and_burridge",
+        "second_centered_wts",
+    )
+    atmo = Atmo_Data(
+        "output",
+        64,
+        32,
+        2,
+        true,
+        true,
+        true,
+        true,
+        mesh.sinθ;
+        radius = 6.371e6,
+    )
+    mktempdir() do dir
+        output = Output_Manager(
+            mesh,
+            vert,
+            atmo,
+            0,
+            600,
+            [:t, :ps];
+            filename = joinpath(dir, "output.nc"),
+            do_plev_output = false,
+            pressure_levels = [100_000.0, 50_000.0],
+            output_interval = 600,
+        )
+        @test !isempty(output.acc_raw)
+        Finalize_Output!(output)
+    end
+end
+
+@testset "Reusable PBL workspace" begin
+    mesh = Spectral_Spherical_Mesh(3, 4, 64, 32, 2, 6.371e6)
+    atmo = Atmo_Data(
+        "pbl",
+        64,
+        32,
+        2,
+        true,
+        true,
+        true,
+        true,
+        mesh.sinθ;
+        radius = 6.371e6,
+    )
+    workspace = JGCM.Atmos_Param_Module.PBL_Workspace(64, 32)
+    p_half = fill(90_000.0, 64, 32, 3)
+    ps = fill(100_000.0, 64, 32, 1)
+    u = fill(3.0, 64, 32, 2)
+    v = fill(4.0, 64, 32, 2)
+    t = fill(280.0, 64, 32, 2)
+    q = fill(0.01, 64, 32, 2)
+
+    V_c, za = JGCM.Atmos_Param_Module.Calculate_V_c_za!(
+        workspace,
+        atmo,
+        p_half,
+        ps,
+        u,
+        v,
+        t,
+        q,
+    )
+    @test V_c === workspace.V_c
+    @test za === workspace.za
+    @test all(V_c .== 5.0)
+    @test all(isfinite, za)
+end

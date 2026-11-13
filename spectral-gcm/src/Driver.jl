@@ -1,0 +1,619 @@
+module Driver
+
+using Printf
+using ..Spectral_Spherical_Mesh_Module
+using ..Atmo_Data_Module
+using ..Dyn_Data_Module
+using ..Vert_Coordinate_Module
+using ..Time_Integrator_Module
+using ..Output_Manager_Module
+using ..Experiment_Configuration
+using ..Initial_Conditions
+using ..Semi_Implicit_Module
+using ..Restart_Manager_Module
+using ..Atmos_Param_Module
+
+using ..Spectral_Dynamics_Module
+using ..Barotropic_Dynamics_Module
+using ..Shallow_Water_Dynamics_Module
+
+export JGCM_Simulate
+
+"""
+    time_steps(duration, Δt)
+
+Return the number of timesteps in `duration`. Both `duration` and `Δt` must be
+positive, and `duration` must be exactly divisible by `Δt`.
+"""
+function time_steps(duration::Integer, Δt::Integer)
+    Δt > 0 || throw(ArgumentError("Δt must be positive, got $Δt"))
+    duration > 0 || throw(ArgumentError("duration must be positive, got $duration"))
+    duration % Δt == 0 || throw(
+        ArgumentError(
+            "simulation duration ($duration) must be evenly divisible by Δt ($Δt)",
+        ),
+    )
+
+    return Int64(div(duration, Δt))
+end
+
+function progress_metrics(completed_steps, total_steps, elapsed_seconds)
+    total_steps > 0 || throw(ArgumentError("total_steps must be positive"))
+    0 <= completed_steps <= total_steps || throw(
+        ArgumentError(
+            "completed_steps ($completed_steps) must be between 0 and total_steps ($total_steps)",
+        ),
+    )
+    segment_progress = completed_steps / total_steps
+    eta_seconds = completed_steps == 0 ? nothing :
+                  elapsed_seconds * (total_steps - completed_steps) / completed_steps
+
+    return (; completed_steps, total_steps, segment_progress, eta_seconds)
+end
+
+function run_metrics(start_time, current_time, completed_steps, elapsed_seconds, day_to_sec)
+    simulated_days = (current_time - start_time) / day_to_sec
+    seconds_per_step = completed_steps == 0 ? nothing : elapsed_seconds / completed_steps
+    simulated_days_per_wall_day = completed_steps == 0 || elapsed_seconds <= 0 ? nothing :
+                                  simulated_days * day_to_sec / elapsed_seconds
+
+    return (; simulated_days, seconds_per_step, simulated_days_per_wall_day)
+end
+
+function betts_miller_state(physics_params, nd, timestep, moisture_processes)
+    get(physics_params, "do_Betts_Miller", false) || return nothing
+    moisture_processes || throw(ArgumentError("Betts-Miller requires moisture_processes = true"))
+    state = Betts_Miller_State(
+        nd;
+        tau = get(physics_params, "bm_tau", 7200.0),
+        relative_humidity = get(physics_params, "bm_relative_humidity", 0.8),
+        energy_correction = get(physics_params, "bm_energy_correction", :isca),
+    )
+    timestep <= state.tau || throw(
+        ArgumentError(
+            "Betts-Miller requires Δt <= bm_tau for each physics substep; " *
+            "got Δt=$timestep s and bm_tau=$(state.tau) s",
+        ),
+    )
+    return state
+end
+
+function validate_config(config::Model_Config)
+    config.model_type in (:Barotropic, :Shallow_Water, :PrimitiveEquation) || throw(
+        ArgumentError("unsupported model_type: $(config.model_type)"),
+    )
+    config.num_fourier >= 0 || throw(ArgumentError("num_fourier must be non-negative"))
+    config.nθ > 0 && iseven(config.nθ) || throw(
+        ArgumentError("nθ must be a positive even integer"),
+    )
+    config.nθ >= cld(3 * config.num_fourier + 1, 2) || throw(
+        ArgumentError("nθ is too small for the requested spectral truncation"),
+    )
+    config.nd > 0 || throw(ArgumentError("nd must be positive"))
+    config.radius > 0 || throw(ArgumentError("radius must be positive"))
+    config.grav > 0 || throw(ArgumentError("grav must be positive"))
+    config.day_to_sec > 0 || throw(ArgumentError("day_to_sec must be positive"))
+    config.output_interval > 0 || throw(ArgumentError("output_interval must be positive"))
+    config.saving_frequency >= 0 || throw(
+        ArgumentError("saving_frequency must be non-negative"),
+    )
+    config.spinup_day >= 0 || throw(ArgumentError("spinup_day must be non-negative"))
+    time_steps(config.end_time, config.Δt)
+    config.output_interval % config.Δt == 0 || throw(
+        ArgumentError("output_interval must be evenly divisible by Δt"),
+    )
+    if config.saving_frequency > 0
+        config.saving_frequency % config.Δt == 0 || throw(
+            ArgumentError("saving_frequency must be evenly divisible by Δt"),
+        )
+        config.saving_frequency % config.output_interval == 0 || throw(
+            ArgumentError("saving_frequency must be a multiple of output_interval so checkpoints preserve averaging windows"),
+        )
+    end
+    spinup_seconds = config.spinup_day * config.day_to_sec
+    isfinite(spinup_seconds) && isinteger(spinup_seconds) || throw(
+        ArgumentError("spinup duration must be a finite integer number of seconds"))
+    Int64(spinup_seconds) % config.output_interval == 0 || throw(
+        ArgumentError("spinup duration must be a multiple of output_interval"))
+    if config.do_plev_output
+        config.model_type == :PrimitiveEquation || throw(
+            ArgumentError("pressure-level output is only available for PrimitiveEquation"),
+        )
+        !isempty(config.pressure_levels) || throw(
+            ArgumentError("pressure-level output requires at least one pressure level"),
+        )
+        all(p -> isfinite(p) && p > 0, config.pressure_levels) || throw(
+            ArgumentError("pressure levels must be positive and finite"),
+        )
+    end
+    return nothing
+end
+
+"""
+    JGCM_Simulate(config::Model_Config)
+
+The main entry point for running any JGCM simulation.
+Handles allocation, initialization, time-stepping, and I/O based on the config.
+"""
+function JGCM_Simulate(config::Model_Config)
+    simulation_start_ns = time_ns()
+    validate_config(config)
+    if !config.is_restart
+        Output_Manager_Module.validate_output_series(config.output_filename, 0;
+                                                     day_to_sec=config.day_to_sec)
+        restart_dir = joinpath(config.output_path, "restart")
+        if isdir(restart_dir) && any(f -> endswith(f, ".jld2"), readdir(restart_dir))
+            throw(ArgumentError("cold start would reuse existing checkpoints in $restart_dir; " *
+                                "use a fresh output directory or archive the old run"))
+        end
+    end
+    physics_params = copy(config.physics_params)
+    mkpath(config.output_path)
+    mkpath(dirname(config.output_filename))
+    mkpath(dirname(config.logger))
+
+    msg_init       = "Initializing Experiment: $(config.name)"
+    msg_model_info = "Model Type: $(config.model_type) | Resolution: T$(config.num_fourier)L$(config.nd)"
+
+    @info msg_init
+    @info msg_model_info
+
+    open(config.logger, "w+") do log
+        println(log, msg_init)
+        println(log, msg_model_info)
+    end
+
+    # =========================================================================
+    # 1. Core Allocation
+    # =========================================================================
+
+    # Mesh
+    # Note: num_spherical usually = num_fourier + 1
+    num_spherical = config.num_fourier + 1
+    nλ = 2 * config.nθ
+
+    mesh = Spectral_Spherical_Mesh(
+        config.num_fourier, num_spherical,
+        nλ, config.nθ, config.nd,
+        config.radius
+    )
+
+    # 3D vs 2D Logic
+    is_3d = (config.model_type == :PrimitiveEquation)
+
+    # Vertical Coordinate (Only for 3D)
+    vert_coord = nothing
+    if is_3d
+        vert_coord = Vert_Coordinate(
+            nλ, config.nθ, config.nd,
+            config.vert_coord_option,
+            config.vert_difference_option,
+            config.vert_ref_level_option
+        )
+    end
+
+    # Atmo_Data
+    # We parse physics flags from the config dictionary
+    do_mass   = get(physics_params, "do_mass_correction",   true)
+    do_energy = get(physics_params, "do_energy_correction", true)
+    do_water  = get(physics_params, "do_water_correction",  true)
+    use_virt  = get(physics_params, "use_virtual_temperature", true)
+    if is_3d && config.moisture_processes && !use_virt
+        throw(ArgumentError(
+            "moist primitive-equation simulations require use_virtual_temperature = true",
+        ))
+    end
+
+    atmo_data = Atmo_Data(
+        config.name,
+        nλ, config.nθ, config.nd,
+        do_mass, do_energy, do_water, use_virt,
+        mesh.sinθ;
+        radius = config.radius, omega = config.omega, grav = config.grav,
+        # Pass dictionary as kwargs to handle optional physics flags
+        [Symbol(k) => v for (k,v) in physics_params]...
+    )
+
+    # Integrator
+    # We map config.damping_coef etc. directly
+    start_time = 0
+    init_step  = true
+
+    integrator = Filtered_Leapfrog(
+        config.robert_coef,
+        config.damping_order, config.damping_coef,
+        mesh.laplacian_eig,
+        config.implicit_coef,
+        config.Δt, init_step, start_time, config.end_time
+    )
+
+    # Dyn_Data
+    dyn_data = Dyn_Data(
+        config.name,
+        config.num_fourier, num_spherical,
+        nλ, config.nθ, config.nd,
+    )
+
+    # Load static LRF data once, before the time loop.
+    if get(physics_params, "do_LRF", false)
+        config.moisture_processes || error("LRF requires moisture_processes = true")
+        lrf_file = get(physics_params, "LRF_file", nothing)
+        lrf_file isa AbstractString ||
+            error("LRF requires physics_params[\"LRF_file\"]")
+        physics_params["LRF_state"] = Load_LRF_State(
+            lrf_file,
+            nλ,
+            config.nθ,
+            config.nd;
+            latitude = rad2deg.(mesh.θc),
+        )
+    end
+
+    # Construct Betts-Miller configuration and reusable column work arrays once.
+    bm_state = betts_miller_state(physics_params, config.nd, config.Δt, config.moisture_processes)
+    bm_state === nothing || (physics_params["BM_state"] = bm_state)
+
+    # Semi-Implicit Solver (Only for 3D)
+    semi_implicit = nothing
+    if is_3d && vert_coord !== nothing
+        # Standard reference state
+        ps_ref = 1.0e5
+        t_ref  = fill(300.0, config.nd)
+        semi_implicit = Semi_Implicit_Solver(vert_coord, atmo_data, integrator, ps_ref, t_ref, mesh.wave_numbers)
+    end
+
+    # =========================================================================
+    # 2. Initialization
+    # =========================================================================
+
+    # Setup Restart Manager
+    saving_freq = config.saving_frequency
+    restart_dir = joinpath(config.output_path, "restart")
+    restart_mgr = Restart_Manager(restart_dir, saving_freq;
+                                 contract=Restart_Contract(config,vert_coord,atmo_data))
+
+    # State Variables for Integrator
+    start_time = 0
+    init_step  = true
+
+    if config.is_restart
+        # --- PATH A: WARM START ---
+        msg_restart = "Warm Start Detected. Loading: $(config.restart_file)"
+        @info msg_restart
+        open(config.logger, "a") do log; println(log, msg_restart); end
+
+        if !isfile(config.restart_file)
+            error("Warm start requested but file missing: $(config.restart_file)")
+        end
+
+        # Load data AND get the time we left off
+        saved_time = Initial_Conditions._load_restart_state!(mesh, dyn_data, config, vert_coord, atmo_data)
+        saved_time % config.output_interval == 0 || throw(ArgumentError(
+            "warm-start time must align with output_interval; checkpoints do not store partial output accumulators"))
+
+        start_time = saved_time
+        init_step  = false  # We are resuming, so we don't need the Euler start
+
+        # Sync integrator to the correct restart time (integrator was constructed
+        # before the restart file was loaded, so its time fields are still 0)
+        integrator.time       = start_time
+        integrator.start_time = start_time
+        integrator.init_step  = false
+
+        # The semi-implicit solver was constructed with the cold-start timestep.
+        # Rebuild its wave matrix for the leapfrog timestep used after a restart.
+        if !isnothing(semi_implicit)
+            Semi_Implicit_Module.Update_Init_Step!(semi_implicit)
+        end
+
+    else
+        # --- PATH B: COLD START ---
+        msg_init_cond = "Cold Start: Setting Analytical Initial Conditions..."
+        @info msg_init_cond
+        open(config.logger, "a") do log; println(log, msg_init_cond); end
+
+        # Standard initialization
+        Initialize_Atmos_State!(mesh, atmo_data, dyn_data, vert_coord, config)
+
+        start_time = 0
+        init_step  = true
+    end
+
+    # `end_time` is the duration of this invocation, not an absolute model time.
+    # Keep this contract so existing warm-start scripts run the requested number
+    # of additional steps regardless of the checkpoint timestamp.
+    NT = time_steps(config.end_time, config.Δt)
+    segment_end_time = start_time + config.end_time
+    integrator.end_time = segment_end_time
+
+    # =========================================================================
+    # 3. Output Management
+    # =========================================================================
+
+    # Map model type to Output_Manager symbol (:PrimitiveEquation, :Barotropic, etc.)
+    # We reuse the logic from config.model_type but need to match Output_Manager expectations
+    om_mode = if config.model_type == :PrimitiveEquation
+        :PrimitiveEquation
+    elseif config.model_type == :Shallow_Water
+        :ShallowWater
+    else
+        :Barotropic
+    end
+
+    # Sanity check: do_plev_output requires pressure_levels to be set
+    if config.do_plev_output && isempty(config.pressure_levels)
+        error("do_plev_output = true but pressure_levels is empty. Please specify the target pressure levels.")
+    end
+
+    op_man = Output_Manager(
+        mesh, vert_coord, atmo_data,
+        start_time, segment_end_time,
+        config.vars_to_output;
+        filename        = config.output_filename,
+        do_plev_output  = config.do_plev_output,
+        pressure_levels = config.pressure_levels,
+        output_interval = config.output_interval,
+        timestep        = config.Δt,
+        day_to_sec      = config.day_to_sec,
+        spinup_day      = config.spinup_day,
+        model_mode      = om_mode,
+        institute       = config.institution,
+        experiment_id   = config.name
+    )
+
+    # Output Initial State
+    Update_Output!(op_man, dyn_data, integrator.time)
+
+    # =========================================================================
+    # 4. Main Time Loop
+    # =========================================================================
+
+    msg_start_loop = "Starting Time Loop: $NT segment steps"
+    @info msg_start_loop
+    open(config.logger, "a") do log; println(log, msg_start_loop); end
+
+    if restart_mgr.saving_frequency > 0
+        msg_cleanup_old_restarts = "Only the last 5 restart files are kept to save space."
+        @warn msg_cleanup_old_restarts
+        open(config.logger, "a") do log
+            println(log, msg_cleanup_old_restarts)
+        end
+    end
+
+    loop_start_ns = time_ns()
+
+    progress_interval = max(1, cld(config.day_to_sec, 4 * config.Δt))
+    for i = 1:NT
+        Step_Dynamics!(
+            config, mesh, atmo_data, dyn_data,
+            integrator, semi_implicit, vert_coord, physics_params
+        )
+
+        # A warm restart has init_step = false and continues with leapfrog directly.
+        if integrator.init_step
+            if isnothing(semi_implicit)
+                Time_Integrator_Module.Update_Init_Step!(integrator)
+            else
+                Semi_Implicit_Module.Update_Init_Step!(semi_implicit)
+            end
+        end
+
+        integrator.time += config.Δt
+        Update_Output!(op_man, dyn_data, integrator.time)
+
+        # Checkpoint + NC chunk rotation (coordinated at saving_frequency)
+        if restart_mgr.saving_frequency > 0 && integrator.time > 0 && (integrator.time % restart_mgr.saving_frequency == 0)
+            Write_Restart_File(restart_mgr, dyn_data, Int64(integrator.time))
+
+            # Don't rotate to a fresh NC chunk on the final step: the chunk just
+            # flushed above already holds the last interval's data, and a new
+            # chunk opened here would never receive any (the loop ends next).
+            if integrator.time < segment_end_time
+                Rotate_NC_Chunk!(op_man, Int64(integrator.time))
+            end
+
+            msg_ckpt = "Checkpoint saved at t=$(integrator.time)"
+            @info msg_ckpt
+            open(config.logger, "a") do log; println(log, msg_ckpt); end
+
+            # Keep only the last 5 files to save space
+            # Keep the starting file
+            if config.is_restart
+                Restart_Manager_Module.Cleanup_Old_Restarts(restart_mgr, 5, config.restart_file)
+            else
+                Restart_Manager_Module.Cleanup_Old_Restarts(restart_mgr, 5)
+            end
+        end
+
+        # Simple progress indicator
+        if i % progress_interval == 0 || i == NT
+            elapsed_seconds = (time_ns() - loop_start_ns) / 1.0e9
+            status_diagnostics(i, NT, elapsed_seconds, config, dyn_data, integrator)
+        end
+    end
+
+    Finalize_Output!(op_man)
+    integration_seconds = (time_ns() - loop_start_ns) / 1.0e9
+    initialization_seconds = (loop_start_ns - simulation_start_ns) / 1.0e9
+    total_seconds = (time_ns() - simulation_start_ns) / 1.0e9
+    completed_steps = NT
+    metrics = run_metrics(
+        start_time,
+        integrator.time,
+        completed_steps,
+        integration_seconds,
+        config.day_to_sec,
+    )
+
+    msg_end = "Simulation Complete."
+    msg_metrics = if completed_steps == 0
+        @sprintf(
+            "Run Metrics: Model Day %.2f -> %.2f | Steps: 0 | Initialization: %s | Integration: %s | Total: %s | Seconds/Step: N/A | Simulated Days/Wall Day: N/A",
+            start_time / config.day_to_sec,
+            integrator.time / config.day_to_sec,
+            format_duration(initialization_seconds),
+            format_duration(integration_seconds),
+            format_duration(total_seconds),
+        )
+    else
+        @sprintf(
+            "Run Metrics: Model Day %.2f -> %.2f | Steps: %d | Initialization: %s | Integration: %s | Total: %s | %.3f s/step | %.2f simulated days/wall day",
+            start_time / config.day_to_sec,
+            integrator.time / config.day_to_sec,
+            completed_steps,
+            format_duration(initialization_seconds),
+            format_duration(integration_seconds),
+            format_duration(total_seconds),
+            metrics.seconds_per_step,
+            metrics.simulated_days_per_wall_day,
+        )
+    end
+    @info msg_end
+    @info msg_metrics
+    open(config.logger, "a") do log
+        println(log, msg_end)
+        println(log, msg_metrics)
+    end
+
+end
+
+
+
+# ==============================================================================
+# Helper: Status Diagnostics
+# ==============================================================================
+function status_diagnostics(
+    completed_steps::Integer,
+    total_steps::Integer,
+    elapsed_seconds::Float64,
+    config::Model_Config,
+    dyn_data::Dyn_Data,
+    integrator::Filtered_Leapfrog,
+)
+
+    day = integrator.time / config.day_to_sec
+    metrics = progress_metrics(completed_steps, total_steps, elapsed_seconds)
+
+    msg_step_and_day = @sprintf(
+        "=== Segment Step %d/%d | Day %.2f ===",
+        metrics.completed_steps,
+        metrics.total_steps,
+        day,
+    )
+    @info msg_step_and_day
+
+    msg_progress = @sprintf(
+        "Segment: %.1f%% | Elapsed: %s | ETA: %s",
+        100 * metrics.segment_progress,
+        format_duration(elapsed_seconds),
+        isnothing(metrics.eta_seconds) ? "N/A" : format_duration(metrics.eta_seconds),
+    )
+    @info msg_progress
+    diagnostic_messages = String[]
+
+    # Define variables to monitor
+    diag_vars = [
+        (:U,      dyn_data.grid_u_c),
+        (:V,      dyn_data.grid_v_c),
+        (:T,      dyn_data.grid_t_c),
+        (:W,      dyn_data.grid_w_full),
+        (:P_full, dyn_data.grid_p_full),
+        (:T_eq,   dyn_data.grid_t_eq),
+        (:Q,      dyn_data.grid_q_c)
+    ]
+
+    for (name, field) in diag_vars
+        # Find index of maximum absolute magnitude
+        max_val, idx = findmax(abs, field)
+
+        # Retrieve the actual signed value at that location
+        actual_val = field[idx]
+
+        # Extract coordinates
+        if ndims(field) == 3
+
+            i, j, k = idx[1], idx[2], idx[3]
+            msg_var_diagnostic = @sprintf(
+                "%-6s: %10.4f  at (λ=%03d, θ=%03d, k=%02d)",
+                string(name), actual_val, i, j, k
+            )
+            @info msg_var_diagnostic
+            push!(diagnostic_messages, msg_var_diagnostic)
+
+        elseif ndims(field) == 2
+
+            i, j = idx[1], idx[2]
+            msg_var_diagnostic = @sprintf(
+                "%-6s: %10.4f  at (λ=%03d, θ=%03d)",
+                string(name), actual_val, i, j
+            )
+            @info msg_var_diagnostic
+            push!(diagnostic_messages, msg_var_diagnostic)
+
+        end
+    end
+
+    println("-"^40) # Separator line
+    open(config.logger, "a") do log
+        println(log, msg_step_and_day)
+        println(log, msg_progress)
+        foreach(message -> println(log, message), diagnostic_messages)
+        println(log, "-"^40)
+    end
+
+end
+
+
+"""
+Format a duration in a readable form for progress log.
+"""
+function format_duration(seconds::Real)
+    total_seconds = max(0, round(Int, seconds))
+    days, remainder = divrem(total_seconds, 86400)
+    hours, remainder = divrem(remainder, 3600)
+    minutes, seconds = divrem(remainder, 60)
+
+    if days > 0
+        return @sprintf("%dd %02dh %02dm %02ds", days, hours, minutes, seconds)
+    elseif hours > 0
+        return @sprintf("%dh %02dm %02ds", hours, minutes, seconds)
+    elseif minutes > 0
+        return @sprintf("%dm %02ds", minutes, seconds)
+    else
+        return @sprintf("%ds", seconds)
+    end
+end
+
+
+
+# ==============================================================================
+# Helper: Dynamics Dispatcher
+# ==============================================================================
+
+function Step_Dynamics!(config, mesh, atmo_data, dyn_data, integrator, semi_implicit, vert_coord, physics_params)
+
+    model_type = config.model_type
+    if model_type == :Barotropic
+        Barotropic_Dynamics!(mesh, atmo_data, dyn_data, integrator)
+
+    elseif model_type == :Shallow_Water
+        # Extract SW params safely
+        kappa_m = get(physics_params, "kappa_m", 1.0/(20.0 * config.day_to_sec))
+        kappa_t = get(physics_params, "kappa_t", 1.0/(10.0 * config.day_to_sec))
+        h_eq    = dyn_data.grid_geopots # We stored h_eq here during init
+        h_0     = get(physics_params, "h_0", 3.0e4)
+
+        Shallow_Water_Physics!(dyn_data, kappa_m, kappa_t, h_eq)
+        Shallow_Water_Dynamics!(mesh, atmo_data, h_0, dyn_data, integrator)
+
+    elseif model_type == :PrimitiveEquation
+        # Primitive Equation Dynamics
+        # Note: Atmosphere_Update! handles physics internals based on Atmo_Data flags
+        Atmosphere_Update!(config, mesh, vert_coord, atmo_data, dyn_data, semi_implicit, physics_params)
+
+    else
+        error("Unknown Model Type: $model_type")
+    end
+end
+
+end
